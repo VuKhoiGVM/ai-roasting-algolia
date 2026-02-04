@@ -1,0 +1,222 @@
+export const STARTUPS = [
+  {
+    id: "1",
+    name: "Airbnb",
+    description: "A marketplace for lodging, primarily homestays for vacation rentals, and tourism activities.",
+    emoji: "🏠",
+    category: "Travel & Hospitality",
+    founded: "2008",
+    funding: "$6.4B",
+    status: "Public",
+    tags: ["Marketplace", "Travel", "Hospitality", "P2P", "Tech"]
+  },
+  {
+    id: "2",
+    name: "Stripe",
+    description: "Financial infrastructure platform for building economic infrastructure on the internet.",
+    emoji: "💳",
+    category: "Fintech",
+    founded: "2010",
+    funding: "$2.2B",
+    status: "Private",
+    tags: ["Payments", "API", "Fintech", "SaaS", "Infrastructure"]
+  },
+  {
+    id: "3",
+    name: "OpenAI",
+    description: "An artificial intelligence research laboratory consisting of the for-profit corporation and its parent nonprofit.",
+    emoji: "🤖",
+    category: "AI/ML",
+    founded: "2015",
+    funding: "$10B+",
+    status: "Private",
+    tags: ["AI", "LLM", "Research", "ChatGPT", "GPT-4"]
+  },
+  {
+    id: "4",
+    name: "Figma",
+    description: "A web-based vector graphics editor and prototyping tool which is primarily web-based.",
+    emoji: "🎨",
+    category: "Design",
+    founded: "2012",
+    funding: "$332M",
+    status: "Acquired by Adobe",
+    tags: ["Design", "Collaboration", "SaaS", "Tools", "UX"]
+  },
+  {
+    id: "5",
+    name: "Notion",
+    description: "A productivity tool that allows users to create notes, databases, wikis, calendars, and more.",
+    emoji: "📝",
+    category: "Productivity",
+    founded: "2013",
+    funding: "$343M",
+    status: "Private",
+    tags: ["Productivity", "SaaS", "Notes", "Database", "Workspace"]
+  },
+  {
+    id: "6",
+    name: "Uber",
+    description: "A mobility as a service provider allowing users to request rides and food delivery.",
+    emoji: "🚗",
+    category: "Transportation",
+    founded: "2009",
+    funding: "$25B+",
+    status: "Public",
+    tags: ["Ride-sharing", "Delivery", "Mobility", "Gig Economy"]
+  },
+  {
+    id: "7",
+    name: "Spotify",
+    description: "A digital music, podcast, and video service that gives you access to millions of songs.",
+    emoji: "🎵",
+    category: "Music & Audio",
+    founded: "2006",
+    funding: "$2.1B",
+    status: "Public",
+    tags: ["Streaming", "Music", "Podcasts", "Entertainment", "Audio"]
+  },
+  {
+    id: "8",
+    name: "Discord",
+    description: "A VoIP and instant messaging social platform which allows communication through voice calls, video calls, text messaging, and media.",
+    emoji: "💬",
+    category: "Social",
+    founded: "2015",
+    funding: "$982M",
+    status: "Private",
+    tags: ["Gaming", "Chat", "Social", "VoIP", "Community"]
+  },
+  {
+    id: "9",
+    name: "Canva",
+    description: "A graphic design platform, used to create social media graphics, presentations, posters, documents, and other visual content.",
+    emoji: "✨",
+    category: "Design",
+    founded: "2013",
+    funding: "$572M",
+    status: "Private",
+    tags: ["Design", "Templates", "SaaS", "Creative", "Marketing"]
+  },
+  {
+    id: "10",
+    name: "Clubhouse",
+    description: "A social audio app for iOS and Android where users can communicate in voice chat rooms.",
+    emoji: "🎙️",
+    category: "Social",
+    founded: "2020",
+    funding: "$310M",
+    status: "Declining",
+    tags: ["Social Audio", "Live", "Chat", "Networking", "Audio"]
+  },
+  {
+    id: "11",
+    name: "WeWork",
+    description: "A provider of shared workspaces, tech startup incubator, and community services.",
+    emoji: "🏢",
+    category: "Real Estate",
+    founded: "2010",
+    funding: "$22B+",
+    status: "Declining",
+    tags: ["Coworking", "Real Estate", "Office", "Community", "Space"]
+  },
+  {
+    id: "12",
+    name: "Theranos",
+    description: "A privately held health technology corporation known for its false claims to have devised blood tests that only needed very small amounts of blood.",
+    emoji: "🩸",
+    category: "Healthcare",
+    founded: "2003",
+    funding: "$700M",
+    status: "Failed",
+    tags: ["Healthcare", "Diagnostics", "Blood Testing", "Fraud", "Failed"]
+  },
+  {
+    id: "13",
+    name: "Juicero",
+    description: "A company that produced a Wi-Fi-connected juice press that squeezed single-serve produce packs.",
+    emoji: "🧃",
+    category: "Food & Beverage",
+    founded: "2013",
+    funding: "$120M",
+    status: "Failed",
+    tags: ["Hardware", "Food", "Juice", "IoT", "Failed Startup"]
+  },
+  {
+    id: "14",
+    name: "Quibi",
+    description: "A short-form streaming platform that specialized in content formatted for smartphones.",
+    emoji: "📱",
+    category: "Media & Entertainment",
+    founded: "2018",
+    funding: "$1.75B",
+    status: "Failed",
+    tags: ["Streaming", "Short-form", "Mobile", "Media", "Failed"]
+  },
+  {
+    id: "15",
+    name: "Scale AI",
+    description: "An AI data platform for powering AI applications by providing high-quality data and infrastructure.",
+    emoji: "⚖️",
+    category: "AI/ML",
+    founded: "2016",
+    funding: "$602M",
+    status: "Private",
+    tags: ["AI", "Data Labeling", "ML", "Annotation", "Infrastructure"]
+  },
+  {
+    id: "16",
+    name: "Databricks",
+    description: "A data and AI company that helps organizations unify their data and AI initiatives.",
+    emoji: "📊",
+    category: "Data & Analytics",
+    founded: "2013",
+    funding: "$4B+",
+    status: "Private",
+    tags: ["Data", "Analytics", "ML", "Big Data", "Lakehouse"]
+  },
+  {
+    id: "17",
+    name: "Rivian",
+    description: "An electric vehicle automaker and automotive technology company focused on adventure vehicles.",
+    emoji: "🚙",
+    category: "Automotive",
+    founded: "2009",
+    funding: "$13.5B+",
+    status: "Public",
+    tags: ["EV", "Automotive", "Trucks", "Sustainability", "Manufacturing"]
+  },
+  {
+    id: "18",
+    name: "Plaid",
+    description: "A financial services company that builds a data transfer network for financial apps.",
+    emoji: "🔗",
+    category: "Fintech",
+    founded: "2013",
+    funding: "$734M",
+    status: "Private",
+    tags: ["Fintech", "API", "Banking", "Data", "Infrastructure"]
+  },
+  {
+    id: "19",
+    name: "Robinhood",
+    description: "A commission-free stock and cryptocurrency trading platform for retail investors.",
+    emoji: "📈",
+    category: "Fintech",
+    founded: "2013",
+    funding: "$5.6B",
+    status: "Public",
+    tags: ["Trading", "Crypto", "Stocks", "Investing", "Mobile"]
+  },
+  {
+    id: "20",
+    name: "Instacart",
+    description: "A grocery delivery and pickup service that operates in the United States and Canada.",
+    emoji: "🛒",
+    category: "Grocery & Delivery",
+    founded: "2012",
+    funding: "$2.7B",
+    status: "Public",
+    tags: ["Delivery", "Grocery", "Logistics", "Gig Economy", "Retail"]
+  }
+]
