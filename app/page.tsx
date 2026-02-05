@@ -8,10 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { Flame, Search, Send, Skull, Info, TrendingUp, Target } from "lucide-react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import StartupSearch from "@/components/startup-search"
+import StartupSearch, { type SearchResult } from "@/components/startup-search"
 import { TopStartupsSection } from "@/components/top-startups-section"
-import { MegaFailuresSection } from "@/components/mega-failures-section"
-import { CategoryPills } from "@/components/category-pills"
+import { FailuresSection } from "@/components/mega-failures-section"
 import { SurvivalMeter } from "@/components/metrics/survival-meter"
 import { SaturationMeter } from "@/components/metrics/saturation-meter"
 import { FundingIndicator } from "@/components/metrics/funding-indicator"
@@ -21,7 +20,11 @@ import { type Startup, type FailedStartup } from "@/lib/algolia"
 import { DynamicBackground } from "@/components/dynamic-background"
 
 const transport = new DefaultChatTransport({
-  api: "/api/roast"
+  api: `https://${process.env.NEXT_PUBLIC_ALGOLIA_APP_ID}.algolia.net/agent-studio/1/agents/${process.env.NEXT_PUBLIC_ALGOLIA_AGENT_ID}/completions?compatibilityMode=ai-sdk-5`,
+  headers: {
+    "x-algolia-application-id": process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+    "x-algolia-api-key": process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!,
+  },
 })
 
 const STORAGE_KEY = "startup-roast-chat"
@@ -39,8 +42,8 @@ interface RoastResponse {
 export default function Home() {
   const [selectedStartupData, setSelectedStartupData] = useState<Startup | null>(null)
   const [selectedGraveyard, setSelectedGraveyard] = useState<FailedStartup | null>(null)
-  const [categoryResults, setCategoryResults] = useState<Startup[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [startupsCategory, setStartupsCategory] = useState<string | null>(null)
+  const [graveyardCategory, setGraveyardCategory] = useState<string | null>(null)
 
   const chat = useChat({ transport })
 
@@ -54,16 +57,35 @@ export default function Home() {
   const { messages, status } = chat
   const [input, setInput] = useState("")
 
+  // Helper to check if result is a failed startup
+  const isFailedStartup = (result: Startup | FailedStartup | SearchResult): result is FailedStartup => {
+    return 'raised_amount' in result && result.raised_amount !== undefined
+  }
+
+  // Unified handler for both startups and failed startups from search
+  const handleSearchSelect = (result: Startup | FailedStartup | SearchResult) => {
+    if (isFailedStartup(result)) {
+      setSelectedGraveyard(result)
+      setSelectedStartupData(null)
+      const funding = result.raised_amount ? `$${(result.raised_amount / 1_000_000).toFixed(0)}M` : 'unknown funding'
+      chat.sendMessage({
+        text: `Analyze this failed startup: ${result.name}. They raised ${funding} and failed because: ${result.why_they_failed || 'unknown reasons'}`
+      })
+    } else {
+      setSelectedStartupData(result)
+      setSelectedGraveyard(null)
+      chat.sendMessage({
+        text: `Roast this startup: ${result.name}. ${result.description}`
+      })
+    }
+  }
+
   const handleStartupSelect = (startup: Startup) => {
-    setSelectedStartupData(startup)
-    setSelectedGraveyard(null)
-    chat.sendMessage({ text: `Roast this startup: ${startup.name}. ${startup.description}` })
+    handleSearchSelect(startup)
   }
 
   const handleGraveyardSelect = (startup: FailedStartup) => {
-    setSelectedGraveyard(startup)
-    setSelectedStartupData(null)
-    chat.sendMessage({ text: `Analyze this failed startup: ${startup.name}. They raised $${(startup.raised_amount || 0) / 1_000_000}M and failed because: ${startup.why_they_failed}` })
+    handleSearchSelect(startup)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -100,7 +122,7 @@ export default function Home() {
   }, [messages])
 
   const displayMessages = useMemo(() => {
-    if (messages.length === 0 && categoryResults.length === 0) {
+    if (messages.length === 0) {
       return [{
         id: "welcome",
         role: "assistant" as const,
@@ -108,7 +130,7 @@ export default function Home() {
       }]
     }
     return messages
-  }, [messages, categoryResults.length])
+  }, [messages])
 
   return (
     <main className="min-h-screen bg-slate-950 relative overflow-hidden">
@@ -130,131 +152,94 @@ export default function Home() {
               <Flame className="w-6 h-6 text-orange-500" />
             </span>
           </div>
-          <p className="text-slate-400 max-w-xl mx-auto">
-            Get brutally honest feedback on your startup idea. Powered by AI + 81K+ startups + 21K+ failures.
+          <p className="text-slate-400 max-w-xl mx-auto text-sm">
+            Before you quit your job, get an honest reality check. We analyze your idea against <span className="text-orange-400 font-medium">2,000+ real startups</span> and <span className="text-red-400 font-medium">400+ failures</span>—so you don't become one.
           </p>
         </div>
 
         {/* Search */}
-        <div className="max-w-3xl mx-auto mb-6">
-          <StartupSearch onSelect={handleStartupSelect} />
+        <div className="max-w-3xl mx-auto mb-8">
+          <StartupSearch onSelect={handleSearchSelect} />
         </div>
 
-        {/* Category Pills */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <CategoryPills
-            onResultsChange={(results) => {
-              setCategoryResults(results)
-              if (results.length > 0) {
-                setSelectedCategory(results[0]?.category || null)
-              } else {
-                setSelectedCategory(null)
-              }
-            }}
-            selectedCategory={selectedCategory}
-            onCategorySelect={setSelectedCategory}
-          />
-        </div>
-
-        {/* Category Results */}
-        {categoryResults.length > 0 && (
-          <div className="max-w-6xl mx-auto mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-xl font-semibold text-white">
-                {selectedCategory} Startups
-              </h2>
-              <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/50">
-                {categoryResults.length} results
-              </Badge>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {categoryResults.slice(0, 10).map((startup) => (
-                <Card
-                  key={startup.objectID}
-                  onClick={() => handleStartupSelect(startup)}
-                  className="bg-slate-900/50 border-slate-700/50 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer p-3"
-                >
-                  <h3 className="font-semibold text-white text-sm truncate">{startup.name}</h3>
-                  {startup.survival_score && (
-                    <span className="text-xs text-green-400">{startup.survival_score}%</span>
-                  )}
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Top Startups */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <TopStartupsSection onSelect={handleStartupSelect} />
-        </div>
-
-        {/* Two Column Layout */}
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-6 mb-8">
-          {/* Left - Mega Failures */}
-          <div>
-            <MegaFailuresSection onSelect={handleGraveyardSelect} />
+        {/* Top Startups & Notable Failures - Side by Side with separate categories */}
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-6 mb-8 items-stretch">
+          {/* Left - Top Startups */}
+          <div className="flex flex-col h-full">
+            <TopStartupsSection
+              onSelect={handleStartupSelect}
+              selectedCategory={startupsCategory}
+              onCategoryChange={setStartupsCategory}
+            />
           </div>
 
-          {/* Right - Chat */}
-          <div>
-            <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm h-[650px] flex flex-col">
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.length === 0 && categoryResults.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                    <div className="w-20 h-20 mb-4 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
-                      <Flame className="w-10 h-10 text-orange-500" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">Ready to Roast</h3>
-                    <p className="text-slate-400 text-sm max-w-xs mb-4">
-                      Click a startup above or describe your idea below
-                    </p>
+          {/* Right - Notable Failures */}
+          <div className="flex flex-col h-full">
+            <FailuresSection
+              onSelect={handleGraveyardSelect}
+              selectedCategory={graveyardCategory}
+              onCategoryChange={setGraveyardCategory}
+            />
+          </div>
+        </div>
+
+        {/* Chat Section */}
+        <div className="max-w-3xl mx-auto">
+          <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm h-[500px] flex flex-col">
+            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                  <div className="w-20 h-20 mb-4 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center">
+                    <Flame className="w-10 h-10 text-orange-500" />
                   </div>
-                ) : (
-                  messagesWithMetrics.map((message: any) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      onPivotClick={handlePivotClick}
-                    />
-                  ))
-                )}
-                {isLoading && (
-                  <div className="flex gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-sm shrink-0">
-                      🔥
-                    </div>
-                    <Card className="px-4 py-3 bg-slate-800/80 border border-slate-700/50">
-                      <div className="flex gap-1">
-                        <span className="h-2 w-2 animate-bounce bg-orange-500 rounded-full" />
-                        <span className="h-2 w-2 animate-bounce bg-orange-500 rounded-full delay-100" />
-                        <span className="h-2 w-2 animate-bounce bg-orange-500 rounded-full delay-200" />
-                      </div>
-                    </Card>
-                  </div>
-                )}
-              </CardContent>
-              <div className="border-t border-slate-700/50 p-4">
-                <form onSubmit={handleSubmit} className="flex w-full gap-2">
-                  <Input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Describe your startup idea..."
-                    className="flex-1 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-orange-500/50 focus:ring-orange-500/20"
-                    disabled={isLoading}
+                  <h3 className="text-xl font-bold text-white mb-2">Ready to Roast</h3>
+                  <p className="text-slate-400 text-sm max-w-xs mb-4">
+                    Click a startup above or describe your idea below
+                  </p>
+                </div>
+              ) : (
+                messagesWithMetrics.map((message: any) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onPivotClick={handlePivotClick}
                   />
-                  <Button
-                    type="submit"
-                    disabled={isLoading || !input.trim()}
-                    className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 glow-orange"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </form>
-              </div>
-            </Card>
-          </div>
+                ))
+              )}
+              {isLoading && (
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-sm shrink-0">
+                    🔥
+                  </div>
+                  <Card className="px-4 py-3 bg-slate-800/80 border border-slate-700/50">
+                    <div className="flex gap-1">
+                      <span className="h-2 w-2 animate-bounce bg-orange-500 rounded-full" />
+                      <span className="h-2 w-2 animate-bounce bg-orange-500 rounded-full delay-100" />
+                      <span className="h-2 w-2 animate-bounce bg-orange-500 rounded-full delay-200" />
+                    </div>
+                  </Card>
+                </div>
+              )}
+            </CardContent>
+            <div className="border-t border-slate-700/50 p-4">
+              <form onSubmit={handleSubmit} className="flex w-full gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Describe your startup idea..."
+                  className="flex-1 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-orange-500/50 focus:ring-orange-500/20"
+                  disabled={isLoading}
+                />
+                <Button
+                  type="submit"
+                  disabled={isLoading || !input.trim()}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 glow-orange"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </form>
+            </div>
+          </Card>
         </div>
       </div>
     </main>

@@ -7,11 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Startup Roast** - An AI-powered startup idea validator that provides brutally honest feedback. Built for a hackathon (deadline Feb 8, 2025).
 
 **Tech Stack:**
-- Next.js 16.1.6 with App Router
-- Vercel AI SDK v6 (`ai`, `@ai-sdk/react`, `@ai-sdk/google`)
+- Next.js 16.1.6 with App Router + Turbopack
+- Vercel AI SDK v6 (`ai`, `@ai-sdk/react`)
 - Algolia JavaScript SDK v5 (`algoliasearch@5.35.0`)
+- Algolia Agent Studio (AI agent with RAG)
 - shadcn/ui + Tailwind CSS v4
-- Google Gemini 2.5 Flash (AI model)
+- React 19
 
 ## Commands
 
@@ -33,65 +34,81 @@ npm run data:upload     # Upload processed data to Algolia
 
 ### Single Page Application
 
-The app uses a **single-page design** - all functionality exists on `/`. The `/roast` route was removed to simplify UX.
+All functionality exists on `/`. The app combines search, browsing, and AI chat in one view.
 
 ### Data Flow
 
 1. **Raw Data** (`data/Fails/*.csv`, `data/yc.csv`) → Python processing script → **Processed JSON** (`data/processed/*.json`)
 2. **Processed JSON** → Upload script → **Algolia Indices** (`startups`, `graveyard`)
 3. **Frontend** → Algolia Search API → Startup/Failed startup results
-4. **User Input** → `/api/roast` → Google Gemini AI → Structured roast response
+4. **User Input** → **Algolia Agent Studio** (auto-searches indices) → Google Gemini AI → Streaming response
 5. **AI Response** → Parsed metrics → Visual components displayed
+
+### Agent Studio Integration
+
+The app uses **Algolia Agent Studio** for Retrieval Augmented Generation (RAG). Instead of a custom `/api/roast` endpoint, the frontend calls Agent Studio directly:
+
+```typescript
+// app/page.tsx - Direct Agent Studio integration
+const transport = new DefaultChatTransport({
+  api: `https://${process.env.NEXT_PUBLIC_ALGOLIA_APP_ID}.algolia.net/agent-studio/1/agents/${process.env.NEXT_PUBLIC_ALGOLIA_AGENT_ID}/completions?compatibilityMode=ai-sdk-5`,
+  headers: {
+    "x-algolia-application-id": process.env.NEXT_PUBLIC_ALGOLIA_APP_ID!,
+    "x-algolia-api-key": process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY!,
+  },
+})
+```
+
+**Agent Configuration (in Algolia Dashboard):**
+- Agent ID: Set via `NEXT_PUBLIC_ALGOLIA_AGENT_ID` env var
+- Tools: `startups` index search, `graveyard` index search
+- LLM: Google Gemini 2.0 Flash
+- System prompt configured in Agent Studio dashboard
 
 ### Component Structure
 
 ```
 app/
-├── page.tsx                    # Main landing page with chat, categories, top startups, mega-failures
-├── layout.tsx                  # Root layout
-├── globals.css                 # Cyberpunk theme styles
-├── error.tsx                   # Error boundary
-└── not-found.tsx               # 404 page
-└── api/
-    └── roast/
-        └── route.ts            # AI roast endpoint with streaming
+├── page.tsx                      # Main page with chat, search, and sections
+├── layout.tsx                    # Root layout with suppressHydrationWarning
+├── globals.css                   # Cyberpunk theme styles
+├── error.tsx                     # Error boundary
+└── not-found.tsx                 # 404 page
 
 components/
-├── dynamic-background.tsx      # Animated canvas background (orbs + particles)
-├── category-pills.tsx          # Clickable category filter pills
-├── top-startups-section.tsx    # Top 5 startups by survival score (horizontal scroll)
-├── mega-failures-section.tsx   # Top 5 failed startups by funding raised
-├── startup-search.tsx          # Search input with dropdown
-├── startup-card.tsx            # Startup display card
-├── survival-tooltip.tsx        # Info tooltip explaining survival score
+├── dynamic-background.tsx        # Animated canvas background
+├── startup-search.tsx            # Unified search (startups + graveyard)
+├── top-startups-section.tsx      # Top 4 startups by survival score
+├── mega-failures-section.tsx     # Top 4 failed startups by funding
+├── category-selector-popup.tsx   # Category filter with popup
 └── metrics/
-    ├── survival-meter.tsx      # Survival probability progress bar
-    ├── saturation-meter.tsx    # Market saturation indicator
-    ├── funding-indicator.tsx   # Funding likelihood meter
-    ├── graveyard-section.tsx   # Similar failures display
-    └── pivot-card.tsx          # Clickable pivot suggestions
+    ├── survival-meter.tsx        # Survival probability progress bar
+    ├── saturation-meter.tsx      # Market saturation indicator
+    ├── funding-indicator.tsx     # Funding likelihood meter
+    ├── graveyard-section.tsx     # Similar failures display
+    └── pivot-card.tsx            # Clickable pivot suggestions
 
 lib/
-├── algolia.ts                  # Algolia v5 search client (frontend)
-└── startups.ts                 # Fallback startup data
+├── algolia.ts                    # Algolia v5 search client
+└── startups.ts                   # Fallback hardcoded data
 
 scripts/
-├── upload-to-algolia.js        # Algolia v5 batch upload script
-└── process-data.py             # Data processing script
+├── upload-to-algolia.js          # Algolia v5 batch upload script
+└── process-data.py               # Data processing script
 ```
 
 ### Key Features
 
-1. **Top 5 Startups** - Horizontal scroll showing top startups by `survival_score`
-2. **Mega-Failures** - Top 5 graveyard entries sorted by `raised_amount`, with inline `why_they_failed`
-3. **Category Pills** - Clickable category filters with startup counts (uses Algolia facets)
-4. **Search** - Real-time Algolia search with dropdown, clears on selection
-5. **Chat with Metrics** - AI responses parsed for survival probability, market saturation, funding likelihood, graveyard comparisons, pivot suggestions
-6. **Survival Tooltip** - ⓘ icon explains what survival score means
+1. **Unified Search** - Single search box returns both active startups and failed companies, sorted with active first
+2. **Top Startups** - Horizontal scroll showing top 4 by `survival_score` with color-coded badges
+3. **Notable Failures** - Top 4 graveyard entries by `raised_amount` with inline `why_they_failed`
+4. **Category Filtering** - Single-select category pills with popup for remaining categories
+5. **Chat with Metrics** - AI responses parsed for survival probability, market saturation, funding, graveyard examples, pivots
+6. **Fixed Height Layout** - 4 cards per section at `h-32` with `min-h-[40px]` category container
 
 ### Metric Parsing (Critical Pattern)
 
-The roast interface parses structured data from unstructured AI responses using regex patterns in `parseRoastMetrics()`:
+The app parses structured data from AI responses using regex in `parseRoastMetrics()`:
 
 ```typescript
 // Expected AI response format:
@@ -109,8 +126,6 @@ The roast interface parses structured data from unstructured AI responses using 
 [Analysis text]
 ```
 
-This pattern must be maintained when modifying the AI system prompt or response parsing.
-
 ### Algolia v5 API Patterns
 
 **Breaking change from v4:** `initIndex()` has been removed. All methods take `indexName` as a parameter.
@@ -126,22 +141,52 @@ return (results[0] as any)?.hits || [];
 const index = client.initIndex('startups'); // ERROR!
 ```
 
-**Available search functions:**
-- `searchStartups(query)` - Search startups index
-- `searchGraveyard(query)` - Search graveyard index
-- `getTopStartups()` - Get top 5 by survival_score
-- `getTopGraveyardEntries()` - Get top 5 by raised_amount
-- `getCategories()` - Get category facets with counts
+**Available search functions (lib/algolia.ts):**
+- `searchStartups(query, options)` - Search with optional category filter
+- `searchGraveyard(query)` - Search failed startups
+- `searchAll(query)` - Search both indices in parallel
+- `getTopStartups()` - Top 10 by survival_score (filtered to score >= 40)
+- `getTopGraveyardEntries()` - Top 10 by raised_amount
+- `getCategories()` - Category facets with counts
+- `getGraveyardCategories()` - Graveyard category facets
 - `searchStartupsByCategory(category)` - Filter by category
+- `searchGraveyardByCategory(category)` - Filter graveyard by category
 
-**Index settings (configured via `setSettings`):**
-- `attributesForFaceting: ['category', 'status', ...]` - Must be configured for facets to work
-- `customRanking: ['desc(survival_score)']` - For startups
-- `customRanking: ['desc(raised_amount)']` - For graveyard
+### Category Selector Pattern
+
+Single-select category filtering with popup:
+
+```typescript
+interface CategorySelectorPopupProps {
+  categories: Array<{ name: string; count: number }>
+  selectedCategory: string | null
+  onSelectionChange: (category: string | null) => void
+  color?: "orange" | "red"  // Orange for startups, red for graveyard
+}
+
+// Shows only selected category when active, or first 3 + "+X more" button
+// Clicking X on selected category clears the filter
+```
 
 ### AI SDK v6 Patterns
 
-**Message structure (from useChat):**
+**Direct Agent Studio integration (no API route):**
+
+```typescript
+// app/page.tsx
+const transport = new DefaultChatTransport({
+  api: `https://${appId}.algolia.net/agent-studio/1/agents/${agentId}/completions?compatibilityMode=ai-sdk-5`,
+  headers: {
+    "x-algolia-application-id": appId,
+    "x-algolia-api-key": searchKey,
+  },
+})
+
+const chat = useChat({ transport })
+chat.sendMessage({ text: input })
+```
+
+**Message structure:**
 ```typescript
 interface Message {
   id: string;
@@ -150,37 +195,7 @@ interface Message {
 }
 ```
 
-**Chat with streaming:**
-```typescript
-const transport = new DefaultChatTransport({ api: '/api/roast' });
-const chat = useChat({ transport });
-chat.sendMessage({ text: input }); // NOT { parts: [...] }
-```
-
-**API route transforms UI format to CoreMessage format:**
-```typescript
-const transformedMessages = messages.map((msg: any) => {
-  if (msg.parts && Array.isArray(msg.parts)) {
-    const text = msg.parts
-      .filter((p: any) => p.type === 'text')
-      .map((p: any) => p.text || '')
-      .join('');
-    return { role: msg.role, content: text };
-  }
-  return { role: msg.role, content: msg.content || msg.text || '' };
-});
-```
-
-**API route response:**
-```typescript
-const result = streamText({
-  model: google('gemini-2.5-flash'),
-  system: ROAST_SYSTEM_PROMPT,
-  messages: transformedMessages,
-  temperature: 0.8,
-});
-return result.toUIMessageStreamResponse();
-```
+**localStorage persistence:** Chat history saved to `startup-roast-chat` key
 
 ## Environment Variables
 
@@ -189,32 +204,55 @@ return result.toUIMessageStreamResponse();
 NEXT_PUBLIC_ALGOLIA_APP_ID=xxx
 NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=xxx  # Search-only key
 
-# Algolia (admin - for upload script)
+# Algolia Agent Studio
+NEXT_PUBLIC_ALGOLIA_AGENT_ID=xxx    # Agent ID from Agent Studio dashboard
+
+# Algolia (admin - for upload script only)
 ALGOLIA_APPLICATION_ID=xxx
 ALGOLIA_ADMIN_API_KEY=xxx           # Admin key with addObject ACL
-
-# Google AI (Gemini)
-GOOGLE_GENERATIVE_AI_API_KEY=xxx    # Get from https://aistudio.google.com/app/apikey
 ```
 
 ## Hydration Warnings
 
-The `DynamicBackground` component uses `suppressHydrationWarning` prop to avoid hydration mismatch warnings since canvas only works client-side:
+The body tag uses `suppressHydrationWarning` to avoid warnings from browser extensions:
 
-```typescript
-<canvas ref={canvasRef} suppressHydrationWarning />
+```tsx
+// app/layout.tsx
+<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      suppressHydrationWarning>
 ```
+
+## UI Patterns
+
+### Fixed Height Containers
+
+To prevent layout shift during category filtering:
+- Category container: `min-h-[40px]`
+- All cards: `h-32` fixed height
+- Loading skeletons match same heights
+
+### Color Coding
+
+- **Survival Score:** Green (70%+), Yellow (40-69%), Red (<40%)
+- **Status:** Green for Active startups, Red for Failed
+- **Section Theme:** Orange for startups, Red for graveyard
 
 ## Data Statistics
 
 - Startups index: 2,525 records (YC companies with survival scores)
-- Graveyard index: 891 records (failed startups with funding amounts and failure reasons)
-- Rich graveyard fields: `what_they_did`, `why_they_failed`, `takeaway`, `raised_amount`, 14 boolean failure flags
+- Graveyard index: 403 records (failed startups with rich failure metadata)
+- Rich graveyard fields: `what_they_did`, `why_they_failed`, `takeaway`, `raised_amount`
 - Top funded failures: Faraday Future ($3.5B), Dyson EV ($2.7B), ContextLogic ($1.8B)
+
+## Known Issues / TODO
+
+- InstantSearch integration for better UX (researched in `plans/search-enhancement/`)
+- Natural language query processing
+- Search analytics tracking
+- AI context enhancement with search results
 
 ## Hackathon Notes
 
 - Deadline: February 8, 2025
-- Algolia Agent Studio integration (see `/plans/`)
-- Uses Algolia search for both startups and graveyard data
-- localStorage for chat persistence (no auth - session only)
+- Uses Algolia Agent Studio for RAG-powered AI responses
+- localStorage for chat persistence (no authentication - session only)

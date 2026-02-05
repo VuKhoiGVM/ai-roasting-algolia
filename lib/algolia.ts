@@ -31,6 +31,9 @@ export type Startup = {
   saturation?: string;
   is_hiring?: boolean;
   index?: string;
+  logo?: string;
+  image?: string;
+  company_image?: string;
 };
 
 export type FailedStartup = {
@@ -92,10 +95,13 @@ export function getAlgoliaClient() {
 }
 
 /**
- * Search startups index
+ * Search startups index with optional filters
  * v5 API: https://www.algolia.com/doc/libraries/sdk/methods/search/search
  */
-export async function searchStartups(query: string): Promise<Startup[]> {
+export async function searchStartups(
+  query: string,
+  options?: { category?: string; hitsPerPage?: number }
+): Promise<Startup[]> {
   const algolia = getAlgoliaClient();
   if (!algolia) return [];
 
@@ -107,7 +113,11 @@ export async function searchStartups(query: string): Promise<Startup[]> {
           type: 'default',
           indexName: 'startups',
           query,
-          hitsPerPage: 20,
+          hitsPerPage: options?.hitsPerPage || 20,
+          filters: options?.category ? `category:"${options.category}"` : undefined,
+          attributesToHighlight: ['name', 'description', 'category'],
+          highlightPreTag: '<em>',
+          highlightPostTag: '</em>',
         },
       ],
     });
@@ -137,6 +147,9 @@ export async function searchGraveyard(query: string): Promise<FailedStartup[]> {
           indexName: 'graveyard',
           query,
           hitsPerPage: 10,
+          attributesToHighlight: ['name', 'what_they_did', 'sector', 'category'],
+          highlightPreTag: '<em>',
+          highlightPostTag: '</em>',
         },
       ],
     });
@@ -166,12 +179,18 @@ export async function searchAll(query: string): Promise<(Startup | FailedStartup
           indexName: 'startups',
           query,
           hitsPerPage: 20,
+          attributesToHighlight: ['name', 'description', 'category'],
+          highlightPreTag: '<em>',
+          highlightPostTag: '</em>',
         },
         {
           type: 'default',
           indexName: 'graveyard',
           query,
           hitsPerPage: 10,
+          attributesToHighlight: ['name', 'what_they_did', 'sector', 'category'],
+          highlightPreTag: '<em>',
+          highlightPostTag: '</em>',
         },
       ],
     });
@@ -189,7 +208,7 @@ export async function searchAll(query: string): Promise<(Startup | FailedStartup
 
 /**
  * Get top startups by survival score
- * Returns 5 startups with highest survival scores
+ * Returns 10 startups with highest survival scores
  */
 export async function getTopStartups(): Promise<Startup[]> {
   const algolia = getAlgoliaClient();
@@ -202,9 +221,9 @@ export async function getTopStartups(): Promise<Startup[]> {
           type: 'default',
           indexName: 'startups',
           query: '',
-          hitsPerPage: 5,
-          // Filter for startups with survival_score and sort by it
-          filters: 'survival_score >= 70',
+          hitsPerPage: 100, // Get more to sort locally
+          // Filter for startups with survival_score >= 40 (good survival rate)
+          filters: 'survival_score >= 40',
         },
       ],
     });
@@ -214,7 +233,7 @@ export async function getTopStartups(): Promise<Startup[]> {
     return hits
       .filter((h: Startup) => h.survival_score !== undefined)
       .sort((a: Startup, b: Startup) => (b.survival_score || 0) - (a.survival_score || 0))
-      .slice(0, 5);
+      .slice(0, 10);
   } catch (error) {
     console.error('Algolia getTopStartups error:', error);
     return [];
@@ -223,7 +242,7 @@ export async function getTopStartups(): Promise<Startup[]> {
 
 /**
  * Get top graveyard entries by funding amount
- * Returns 5 failed startups that raised the most money
+ * Returns 10 failed startups that raised the most money
  */
 export async function getTopGraveyardEntries(): Promise<FailedStartup[]> {
   const algolia = getAlgoliaClient();
@@ -242,11 +261,11 @@ export async function getTopGraveyardEntries(): Promise<FailedStartup[]> {
     });
 
     const hits = (results[0] as any)?.hits || [];
-    // Sort by raised_amount descending and take top 5
+    // Sort by raised_amount descending and take top 10
     return hits
       .filter((h: FailedStartup) => h.raised_amount !== undefined && h.raised_amount > 0)
       .sort((a: FailedStartup, b: FailedStartup) => (b.raised_amount || 0) - (a.raised_amount || 0))
-      .slice(0, 5);
+      .slice(0, 10);
   } catch (error) {
     console.error('Algolia getTopGraveyardEntries error:', error);
     return [];
@@ -307,6 +326,63 @@ export async function searchStartupsByCategory(category: string): Promise<Startu
     return (results[0] as any)?.hits || [];
   } catch (error) {
     console.error('Algolia searchStartupsByCategory error:', error);
+    return [];
+  }
+}
+
+/**
+ * Search graveyard (failed startups) by category
+ */
+export async function searchGraveyardByCategory(category: string): Promise<FailedStartup[]> {
+  const algolia = getAlgoliaClient();
+  if (!algolia) return [];
+
+  try {
+    const { results } = await algolia.search({
+      requests: [
+        {
+          type: 'default',
+          indexName: 'graveyard',
+          query: '',
+          hitsPerPage: 50,
+          filters: `category:"${category}"`,
+        },
+      ],
+    });
+
+    return (results[0] as any)?.hits || [];
+  } catch (error) {
+    console.error('Algolia searchGraveyardByCategory error:', error);
+    return [];
+  }
+}
+
+/**
+ * Get graveyard categories with counts
+ */
+export async function getGraveyardCategories(): Promise<{ name: string; count: number }[]> {
+  const algolia = getAlgoliaClient();
+  if (!algolia) return [];
+
+  try {
+    const { results } = await algolia.search({
+      requests: [
+        {
+          type: 'default',
+          indexName: 'graveyard',
+          query: '',
+          hitsPerPage: 0,
+          facets: ['category'],
+        },
+      ],
+    });
+
+    const facets = (results[0] as any)?.facets?.category || {};
+    return Object.entries(facets)
+      .map(([name, count]) => ({ name, count: count as number }))
+      .sort((a, b) => b.count - a.count);
+  } catch (error) {
+    console.error('Algolia getGraveyardCategories error:', error);
     return [];
   }
 }
