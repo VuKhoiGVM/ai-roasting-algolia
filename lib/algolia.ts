@@ -30,11 +30,17 @@ export type Startup = {
   survival_score?: number;
   saturation?: string;
   is_hiring?: boolean;
+  team_size?: number;
+  open_jobs?: number;
   index?: string;
   logo?: string;
   image?: string;
   company_image?: string;
 };
+
+// Re-export survival calculator types and functions
+export type { SurvivalScoreBreakdown } from './survival-calculator';
+export { calculateSurvivalScore, getSurvivalLabel, getTrendLabel } from './survival-calculator';
 
 export type FailedStartup = {
   objectID: string;

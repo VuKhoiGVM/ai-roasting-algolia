@@ -1,10 +1,12 @@
 import { SurvivalTooltip } from "@/components/survival-tooltip"
+import type { SurvivalScoreBreakdown } from "@/lib/survival-calculator"
 
 interface SurvivalMeterProps {
   probability?: number | null;
+  breakdown?: SurvivalScoreBreakdown;
 }
 
-export function SurvivalMeter({ probability = 50 }: SurvivalMeterProps) {
+export function SurvivalMeter({ probability = 50, breakdown }: SurvivalMeterProps) {
   const getColor = (p: number) => {
     if (p >= 70) return { bg: 'bg-green-500', text: 'text-green-400', glow: 'glow-green' };
     if (p >= 40) return { bg: 'bg-yellow-500', text: 'text-yellow-400', glow: 'glow-yellow' };
@@ -18,7 +20,7 @@ export function SurvivalMeter({ probability = 50 }: SurvivalMeterProps) {
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-slate-300 flex items-center gap-1">
           Survival Probability
-          <SurvivalTooltip score={probability} />
+          <SurvivalTooltip score={probability} breakdown={breakdown} />
         </span>
         <span className={`text-lg font-bold ${text} ${glow}`}>{probability ?? 50}%</span>
       </div>
