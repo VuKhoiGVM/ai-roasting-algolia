@@ -367,6 +367,20 @@ def enhance_with_insights(startups: List[Dict]) -> List[Dict]:
         "Other": 1.0,
     }
 
+    # Category trend scores (5 = emerging, 1 = saturated)
+    category_trends = {
+        "AI": 5, "Artificial Intelligence": 5, "Machine Learning": 5, "ML": 5,
+        "Generative AI": 5, "LLM": 5,
+        "Climate Tech": 4, "Climate": 4, "Biotech": 4, "Biology": 4,
+        "Web3": 3, "Crypto": 2, "Blockchain": 2,
+        "SaaS": 3, "B2B": 3, "Developer Tools": 4, "Infrastructure": 3,
+        "Fintech": 3, "Finance": 3, "Payments": 3,
+        "E-commerce": 2, "Healthcare": 3, "Health": 3, "Medical": 3,
+        "Social": 1, "Social Media": 1, "Marketplace": 1, "Marketplaces": 1,
+        "Consumer": 2, "Food": 1, "Food Delivery": 1, "Transportation": 1,
+        "Mobility": 1, "Gig": 1, "On-demand": 1,
+    }
+
     for startup in startups:
         status = startup.get("status", "Active")
         batch = startup.get("batch", "")
@@ -417,14 +431,65 @@ def enhance_with_insights(startups: List[Dict]) -> List[Dict]:
 
             # Convert to percentage and clamp
             score = int(raw_score * 100)
-            startup["survival_score"] = min(85, max(5, score))
+            base_survival = min(85, max(5, score))
+
         else:
             # Inactive/exited companies
             # Give them moderate score (may have exited successfully)
-            startup["survival_score"] = 40
+            base_survival = 40
 
-        # Add market saturation field for frontend survival calculator
-        startup["saturation"] = get_category_saturation(category, category_counts)
+        # ===== MULTI-FACTOR SURVIVAL BREAKDOWN =====
+        # Growth Score (35%): Based on calculated survival_score
+        growth_score = int(base_survival * 0.35)
+
+        # Market Score (25%): Saturation penalty + trend bonus
+        saturation = get_category_saturation(category, category_counts)
+        saturation_penalty = {"High": -15, "Medium": -5, "Low": 0}.get(saturation, -2)
+
+        # Category trend score (5 = emerging, 1 = saturated)
+        trend_score_raw = category_trends.get(category, 2)
+        for key, val in category_trends.items():
+            if key.lower() in category.lower():
+                trend_score_raw = val
+                break
+        trend_bonus = (trend_score_raw - 2.5) * 4  # -10 to +10
+        market_score = int(max(0, min(25, 25 + saturation_penalty + trend_bonus)))
+
+        # Team Score (20%): YC batch = proven team
+        team_score = 20 if batch else 5
+
+        # Funding Score (15%): Hiring status and YC participation
+        if is_hiring:
+            funding_score = int(15 * 0.85)  # 13
+        elif batch:
+            funding_score = int(15 * 0.60)  # 9
+        elif team_size and team_size > 10:
+            funding_score = int(15 * 0.50)  # 8
+        else:
+            funding_score = int(15 * 0.25)  # 4
+
+        # Trend Score (5%): Category hype cycle
+        trend_score = int((trend_score_raw / 5) * 100)
+
+        # Total survival score (clamped to 0-100)
+        total_survival = max(0, min(100,
+            growth_score + market_score + team_score + funding_score + (trend_score_raw / 5 * 5)
+        ))
+
+        # Store survival score and breakdown
+        startup["survival_score"] = int(total_survival)
+        startup["survival_breakdown"] = {
+            "total": int(total_survival),
+            "growth": int((growth_score / 0.35) if growth_score > 0 else base_survival),
+            "market": int((market_score / 25) * 100),
+            "team": 100 if batch else 25,
+            "funding": int((funding_score / 15) * 100),
+            "trend": trend_score,
+            "penalty": 0
+        }
+
+        # Add market saturation field
+        startup["saturation"] = saturation
 
     return startups
 

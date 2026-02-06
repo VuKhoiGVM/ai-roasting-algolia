@@ -29,6 +29,15 @@ export type Startup = {
   category?: string;
   survival_score?: number;
   saturation?: string;
+  survival_breakdown?: {
+    total: number;
+    growth: number;
+    market: number;
+    team: number;
+    funding: number;
+    trend: number;
+    penalty: number;
+  };
   is_hiring?: boolean;
   team_size?: number;
   open_jobs?: number;

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TextTooltip } from "@/components/ui/tooltip"
 import { TrendingUp, Sparkles, Info } from "lucide-react"
-import { getTopStartups, searchStartups, getCategories, type Startup, calculateSurvivalScore } from "@/lib/algolia"
+import { getTopStartups, searchStartups, getCategories, type Startup } from "@/lib/algolia"
 import { CategorySelectorPopup } from "@/components/category-selector-popup"
 import type { SurvivalScoreBreakdown } from "@/lib/survival-calculator"
 
@@ -210,7 +210,16 @@ export function TopStartupsSection({ onSelect, selectedCategory = null, onCatego
           const logo = getCompanyLogo(startup)
           const initials = getInitials(startup.name)
           const textColor = getColorFromName(startup.name)
-          const breakdown = calculateSurvivalScore(startup)
+          // Use pre-calculated breakdown from data, or calculate if missing
+          const breakdown: SurvivalScoreBreakdown = startup.survival_breakdown || {
+            total: startup.survival_score || 50,
+            growth: startup.survival_score || 50,
+            market: 50,
+            team: startup.batch ? 100 : 25,
+            funding: 50,
+            trend: 50,
+            penalty: 0
+          }
 
           return (
             <Tooltip

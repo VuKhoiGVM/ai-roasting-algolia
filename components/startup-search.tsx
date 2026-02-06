@@ -5,8 +5,9 @@ import { Search, Loader2, Skull, Calendar, Clock, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { searchStartups, searchGraveyard, type Startup, type FailedStartup, calculateSurvivalScore } from "@/lib/algolia"
+import { searchStartups, searchGraveyard, type Startup, type FailedStartup } from "@/lib/algolia"
 import { STARTUPS } from "@/lib/startups"
+import type { SurvivalScoreBreakdown } from "@/lib/survival-calculator"
 
 interface StartupSearchProps {
   onSelect: (startup: Startup | FailedStartup) => void
@@ -114,7 +115,17 @@ function getColorFromName(name: string): string {
 
 // Compact survival breakdown indicator for search results
 function SurvivalBreakdownIndicator({ startup }: { startup: Startup }) {
-  const breakdown = calculateSurvivalScore(startup)
+  // Use pre-calculated breakdown from data, or calculate fallback
+  const breakdown: SurvivalScoreBreakdown = startup.survival_breakdown || {
+    total: startup.survival_score || 50,
+    growth: startup.survival_score || 50,
+    market: 50,
+    team: startup.batch ? 100 : 25,
+    funding: startup.is_hiring ? 85 : 50,
+    trend: 50,
+    penalty: 0
+  }
+
   const factors = [
     { name: 'Growth', value: breakdown.growth, icon: '📈' },
     { name: 'Market', value: breakdown.market, icon: '⚡' },
