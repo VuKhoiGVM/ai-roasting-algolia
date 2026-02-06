@@ -5,7 +5,7 @@ import { Search, Loader2, Skull, Calendar, Clock, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { searchStartups, searchGraveyard, type Startup, type FailedStartup } from "@/lib/algolia"
+import { searchStartups, searchGraveyard, type Startup, type FailedStartup, calculateSurvivalScore } from "@/lib/algolia"
 import { STARTUPS } from "@/lib/startups"
 
 interface StartupSearchProps {
@@ -110,6 +110,33 @@ function getColorFromName(name: string): string {
     hash = name.charCodeAt(i) + ((hash << 5) - hash)
   }
   return colors[Math.abs(hash) % colors.length]
+}
+
+// Compact survival breakdown indicator for search results
+function SurvivalBreakdownIndicator({ startup }: { startup: Startup }) {
+  const breakdown = calculateSurvivalScore(startup)
+  const factors = [
+    { name: 'Growth', value: breakdown.growth, icon: '📈' },
+    { name: 'Market', value: breakdown.market, icon: '⚡' },
+    { name: 'Team', value: breakdown.team, icon: '👥' },
+    { name: 'Funding', value: breakdown.funding, icon: '💰' },
+  ]
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5">
+      {factors.map(f => {
+        const color = f.value >= 70 ? 'bg-green-500' : f.value >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+        return (
+          <div key={f.name} className="flex items-center gap-1 group/bfactor" title={`${f.name}: ${f.value}%`}>
+            <span className="text-[10px]">{f.icon}</span>
+            <div className="w-8 h-1 bg-slate-700 rounded-full overflow-hidden">
+              <div className={`h-full ${color}`} style={{ width: `${f.value}%` }} />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function StartupSearch({ onSelect }: StartupSearchProps) {
@@ -541,6 +568,11 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
                               >
                                 {(result as Startup).survival_score}% survival
                               </span>
+                            )}
+
+                            {/* Survival Breakdown Indicator for startups */}
+                            {!isFailed(result) && (result as Startup).survival_score && (
+                              <SurvivalBreakdownIndicator startup={result as Startup} />
                             )}
 
                             {/* Failed-specific metrics */}

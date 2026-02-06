@@ -5,8 +5,9 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TextTooltip } from "@/components/ui/tooltip"
 import { TrendingUp, Sparkles, Info } from "lucide-react"
-import { getTopStartups, searchStartups, getCategories, type Startup } from "@/lib/algolia"
+import { getTopStartups, searchStartups, getCategories, type Startup, calculateSurvivalScore } from "@/lib/algolia"
 import { CategorySelectorPopup } from "@/components/category-selector-popup"
+import type { SurvivalScoreBreakdown } from "@/lib/survival-calculator"
 
 interface TopStartupsSectionProps {
   onSelect: (startup: Startup) => void
@@ -34,6 +35,58 @@ function SurvivalScoreLegend() {
         <Info className="w-3.5 h-3.5" />
       </button>
     </Tooltip>
+  )
+}
+
+// Survival Breakdown Component - shows factor bars
+function SurvivalBreakdown({ breakdown }: { breakdown: SurvivalScoreBreakdown }) {
+  const FactorBar = ({
+    icon,
+    label,
+    value,
+    max = 100
+  }: {
+    icon: string
+    label: string
+    value: number
+    max?: number
+  }) => {
+    const percentage = Math.min(100, Math.max(0, (value / max) * 100))
+    const color =
+      value >= 70 ? 'bg-green-500' : value >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <span className="w-4 text-center">{icon}</span>
+        <span className="w-20 text-slate-400">{label}</span>
+        <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className={`h-full ${color}`} style={{ width: `${percentage}%` }} />
+        </div>
+        <span className={`w-8 text-right font-medium ${
+          value >= 70 ? 'text-green-400' : value >= 40 ? 'text-yellow-400' : 'text-red-400'
+        }`}>
+          {value}%
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2 pt-2 border-t border-slate-700/50 mt-2">
+      <p className="text-xs text-slate-500 font-medium">Score Breakdown</p>
+      <FactorBar icon="📈" label="Growth (35%)" value={breakdown.growth} />
+      <FactorBar icon="⚡" label="Market (25%)" value={breakdown.market} />
+      <FactorBar icon="👥" label="Team (20%)" value={breakdown.team} />
+      <FactorBar icon="💰" label="Funding (15%)" value={breakdown.funding} />
+      <FactorBar icon="🔥" label="Trend (5%)" value={breakdown.trend} />
+      {breakdown.penalty > 0 && (
+        <div className="flex items-center gap-2 text-xs text-red-400">
+          <span className="w-4 text-center">⚠️</span>
+          <span className="text-slate-400">Failure Penalty</span>
+          <span className="ml-auto font-medium">-{breakdown.penalty}%</span>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -157,6 +210,7 @@ export function TopStartupsSection({ onSelect, selectedCategory = null, onCatego
           const logo = getCompanyLogo(startup)
           const initials = getInitials(startup.name)
           const textColor = getColorFromName(startup.name)
+          const breakdown = calculateSurvivalScore(startup)
 
           return (
             <Tooltip
@@ -191,11 +245,22 @@ export function TopStartupsSection({ onSelect, selectedCategory = null, onCatego
                         {startup.batch}
                       </span>
                     )}
+                    {startup.saturation && (
+                      <span className={`text-xs px-2 py-1 rounded border ${
+                        startup.saturation === 'High'
+                          ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                          : startup.saturation === 'Medium'
+                          ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                          : 'bg-green-500/20 text-green-400 border-green-500/30'
+                      }`}>
+                        {startup.saturation} Saturation
+                      </span>
+                    )}
                     {startup.year_founded && (
                       <span className="text-xs px-2 py-1 rounded bg-slate-700 text-slate-400 border border-slate-600">
                         Since {startup.year_founded}
                       </span>
-                    )}
+                  )}
                   </div>
                   {startup.website && (
                     <a
@@ -207,6 +272,7 @@ export function TopStartupsSection({ onSelect, selectedCategory = null, onCatego
                       <span className="underline">{startup.website}</span>
                     </a>
                   )}
+                  <SurvivalBreakdown breakdown={breakdown} />
                 </div>
               }
             >
