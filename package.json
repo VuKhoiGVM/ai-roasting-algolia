@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "data:process": "python3 scripts/process-data.py",
-    "data:upload": "node scripts/upload-to-algolia.js"
+    "data:upload": "node scripts/upload-to-algolia.js",
+    "algolia:setup-rules": "node scripts/setup-query-rules.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.20",
