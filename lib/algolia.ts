@@ -115,29 +115,35 @@ export function getAlgoliaClient() {
  */
 export async function searchStartups(
   query: string,
-  options?: { category?: string; hitsPerPage?: number }
+  options?: {
+    category?: string;
+    hitsPerPage?: number;
+    filters?: string;
+    facetFilters?: string[][];
+  }
 ): Promise<Startup[]> {
   const algolia = getAlgoliaClient();
   if (!algolia) return [];
 
   try {
-    // v5: Use client.search() with requests array instead of initIndex()
+    const filterString = options?.category ? `category:"${options.category}"` : options?.filters || '';
+
+    const searchParams = {
+      type: 'default' as const,
+      indexName: 'startups',
+      query,
+      hitsPerPage: options?.hitsPerPage || 20,
+      filters: filterString || undefined,
+      facetFilters: options?.facetFilters,
+      attributesToHighlight: ['name', 'description', 'category'],
+      highlightPreTag: '<em>',
+      highlightPostTag: '</em>',
+    }
+
     const { results } = await algolia.search({
-      requests: [
-        {
-          type: 'default',
-          indexName: 'startups',
-          query,
-          hitsPerPage: options?.hitsPerPage || 20,
-          filters: options?.category ? `category:"${options.category}"` : undefined,
-          attributesToHighlight: ['name', 'description', 'category'],
-          highlightPreTag: '<em>',
-          highlightPostTag: '</em>',
-        },
-      ],
+      requests: [searchParams],
     });
 
-    // Type assertion for hits from search response
     return (results[0] as any)?.hits || [];
   } catch (error) {
     console.error('Algolia search error:', error);
@@ -302,7 +308,7 @@ export async function getCategories(): Promise<{ name: string; count: number }[]
           type: 'default',
           indexName: 'startups',
           query: '',
-          hitsPerPage: 0, // We only need facets
+          hitsPerPage: 0,
           facets: ['category'],
         },
       ],
@@ -400,4 +406,86 @@ export async function getGraveyardCategories(): Promise<{ name: string; count: n
     console.error('Algolia getGraveyardCategories error:', error);
     return [];
   }
+}
+
+/**
+ * Get YC batch facets with counts
+ */
+export async function getBatchFacets(): Promise<{ value: string; count: number }[]> {
+  const algolia = getAlgoliaClient();
+  if (!algolia) return [];
+
+  try {
+    const { results } = await algolia.search({
+      requests: [
+        {
+          type: 'default',
+          indexName: 'startups',
+          query: '',
+          hitsPerPage: 0,
+          facets: ['batch'],
+        },
+      ],
+    });
+
+    const facets = (results[0] as any)?.facets?.batch || {};
+    return Object.entries(facets)
+      .map(([value, count]) => ({ value, count: count as number }))
+      .filter(f => f.value)
+      .sort((a, b) => {
+        const aYear = parseInt(a.value.replace(/\D/g, '')) || 0;
+        const bYear = parseInt(b.value.replace(/\D/g, '')) || 0;
+        return bYear - aYear;
+      });
+  } catch (error) {
+    console.error('Algolia getBatchFacets error:', error);
+    return [];
+  }
+}
+
+/**
+ * Get status facets with counts
+ */
+export async function getStatusFacets(): Promise<{ value: string; count: number }[]> {
+  const algolia = getAlgoliaClient();
+  if (!algolia) return [];
+
+  try {
+    const { results } = await algolia.search({
+      requests: [
+        {
+          type: 'default',
+          indexName: 'startups',
+          query: '',
+          hitsPerPage: 0,
+          facets: ['status'],
+        },
+      ],
+    });
+
+    const facets = (results[0] as any)?.facets?.status || {};
+    return Object.entries(facets)
+      .map(([value, count]) => ({ value: value || 'Unknown', count: count as number }))
+      .sort((a, b) => b.count - a.count);
+  } catch (error) {
+    console.error('Algolia getStatusFacets error:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all facets for filtering (categories, batches, status)
+ */
+export async function getAllFacets(): Promise<{
+  categories: { value: string; count: number }[];
+  batches: { value: string; count: number }[];
+  status: { value: string; count: number }[];
+}> {
+  const [categories, batches, status] = await Promise.all([
+    getCategories().then(cats => cats.map(c => ({ value: c.name, count: c.count }))),
+    getBatchFacets(),
+    getStatusFacets(),
+  ]);
+
+  return { categories, batches, status };
 }

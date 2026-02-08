@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Search, Loader2, Skull, Calendar, Clock, X } from "lucide-react"
+import { Search, Loader2, Skull, Calendar, Clock, X, Filter } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { searchStartups, searchGraveyard, type Startup, type FailedStartup } from "@/lib/algolia"
+import { FacetFilter, type FacetValue } from "@/components/facet-filter"
+import { ActiveFilters } from "@/components/active-filters"
+import { searchStartups, searchGraveyard, getAllFacets, type Startup, type FailedStartup } from "@/lib/algolia"
 import { STARTUPS } from "@/lib/startups"
 import type { SurvivalScoreBreakdown } from "@/lib/survival-calculator"
 
@@ -159,17 +161,93 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
   const [isKeyboardNav, setIsKeyboardNav] = useState(false)
 
+  // Facet state
+  const [showFacets, setShowFacets] = useState(false)
+  const [facetFilters, setFacetFilters] = useState<{
+    category: string[]
+    batch: string[]
+    status: string[]
+  }>({ category: [], batch: [], status: [] })
+  const [facetData, setFacetData] = useState<{
+    categories: FacetValue[]
+    batches: FacetValue[]
+    status: FacetValue[]
+  }>({ categories: [], batches: [], status: [] })
+  const [facetsLoaded, setFacetsLoaded] = useState(false)
+
+  // Stringified version for dependency (forces re-run when content changes)
+  const facetFiltersString = JSON.stringify(facetFilters)
+
+  // Get section title based on applied status filters
+  const getStartupSectionTitle = () => {
+    const statusFilters = facetFilters.status
+    if (statusFilters.length === 0) {
+      return '🚀 YC Startups'
+    }
+    if (statusFilters.length === 1) {
+      const status = statusFilters[0]
+      switch (status) {
+        case 'Active':
+          return '🟢 Active Startups'
+        case 'Inactive':
+          return '⚪ Inactive Startups'
+        case 'Acquired':
+          return '🔵 Acquired Startups'
+        default:
+          return `${status} Startups`
+      }
+    }
+    // Multiple statuses selected
+    return '🚀 YC Startups'
+  }
+
+  // Get section color based on applied status filters
+  const getStartupSectionStyles = () => {
+    const statusFilters = facetFilters.status
+    if (statusFilters.length === 1) {
+      const status = statusFilters[0]
+      switch (status) {
+        case 'Active':
+          return 'text-green-400 bg-green-500/10'
+        case 'Inactive':
+          return 'text-slate-400 bg-slate-500/10'
+        case 'Acquired':
+          return 'text-blue-400 bg-blue-500/10'
+        default:
+          return 'text-orange-400 bg-orange-500/10'
+      }
+    }
+    return 'text-orange-400 bg-orange-500/10'
+  }
+
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const filterContainerRef = useRef<HTMLDivElement>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const facetFiltersRef = useRef(facetFilters)
 
-  // Load recent searches on mount
+  // Keep ref in sync with state
+  useEffect(() => {
+    facetFiltersRef.current = facetFilters
+  }, [facetFilters])
+
+  // Load recent searches and facet data on mount
   useEffect(() => {
     setRecentSearches(getRecentSearches())
+    // Load facet data
+    getAllFacets().then(data => {
+      setFacetData({
+        categories: data.categories,
+        batches: data.batches.slice(0, 10), // Top 10 batches
+        status: data.status
+      })
+      setFacetsLoaded(true)
+    }).catch((err) => {
+      console.error('Failed to load facets:', err)
+      setFacetsLoaded(true) // Mark as loaded even on error to avoid infinite loading state
+    })
   }, [])
-
-  // Scroll selected item into view
 
   // Reset itemRefs when results change
   useEffect(() => {
@@ -194,7 +272,10 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
   useEffect(() => {
     clearTimeout(searchTimeoutRef.current)
 
-    if (!query.trim()) {
+    // Check if any filters are active
+    const hasActiveFilters = Object.values(facetFilters).some(arr => arr.length > 0)
+
+    if (!query.trim() && !hasActiveFilters) {
       setResults([])
       setSelectedIndex(-1)
       // Show recent searches if available
@@ -207,12 +288,36 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
     }
 
     searchTimeoutRef.current = setTimeout(async () => {
+      // Use ref to get latest facetFilters state (avoid closure stale state)
+      const currentFilters = facetFiltersRef.current
+      console.log('🔍 Search triggered with filters:', currentFilters)
       setIsSearching(true)
       try {
+        // Build facet filters for Algolia
+        // Format: [[facet1:val1, facet1:val2], [facet2:val1]] means (facet1=val1 OR val2) AND facet2=val1
+        const filters: string[][] = []
+
+        if (currentFilters.category.length > 0) {
+          filters.push(currentFilters.category.map(c => `category:${c}`))
+        }
+        if (currentFilters.batch.length > 0) {
+          filters.push(currentFilters.batch.map(b => `batch:${b}`))
+        }
+        if (currentFilters.status.length > 0) {
+          filters.push(currentFilters.status.map(s => `status:${s}`))
+        }
+
+        console.log('🔍 Sending to Algolia:', { filters, hasFilters: filters.length > 0 })
+
         // Search both indices in parallel
         const [startupsResults, graveyardResults] = await Promise.all([
-          searchStartups(query),
-          searchGraveyard(query)
+          searchStartups(query, {
+            hitsPerPage: 20,
+            ...(filters.length > 0 && {
+              facetFilters: filters
+            })
+          }),
+          searchGraveyard(query) // Graveyard not filtered by facets
         ])
 
         // Combine results with source tagging
@@ -240,7 +345,7 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
     }, 300)
 
     return () => clearTimeout(searchTimeoutRef.current)
-  }, [query, recentSearches.length])
+  }, [query, recentSearches.length, facetFiltersString])
 
   // Handle click outside
   useEffect(() => {
@@ -248,7 +353,8 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node) &&
-        !inputRef.current?.contains(event.target as Node)
+        !inputRef.current?.contains(event.target as Node) &&
+        !filterContainerRef.current?.contains(event.target as Node)
       ) {
         setIsOpen(false)
         setSelectedIndex(-1)
@@ -286,6 +392,18 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
       setIsOpen(false)
     }
   }, [query])
+
+  // Facet handlers
+  const handleRemoveFilter = useCallback((facet: string, value: string) => {
+    setFacetFilters(prev => ({
+      ...prev,
+      [facet]: prev[facet as keyof typeof prev].filter(v => v !== value)
+    }))
+  }, [])
+
+  const handleClearAllFilters = useCallback(() => {
+    setFacetFilters({ category: [], batch: [], status: [] })
+  }, [])
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -405,6 +523,76 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
         )}
       </div>
 
+      {/* Filters Section - both button and panel in one container */}
+      {isOpen && (
+        <div className="mt-2" ref={filterContainerRef}>
+          {/* Filter Toggle Button */}
+          <button
+            onClick={() => setShowFacets(!showFacets)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                showFacets
+                  ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50'
+                  : 'bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-slate-600'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {Object.values(facetFilters).flat().length > 0 && (
+                <Badge className="ml-1 bg-orange-500 text-white text-xs">
+                  {Object.values(facetFilters).flat().length}
+                </Badge>
+              )}
+            </button>
+
+          {/* Facet Panel */}
+          {showFacets && (
+            <Card className="mt-2 bg-slate-900/95 border-slate-700/80 p-4">
+              {/* Active Filters */}
+              <ActiveFilters
+            filters={facetFilters}
+            onRemoveFilter={handleRemoveFilter}
+            onClearAll={handleClearAllFilters}
+            color="orange"
+          />
+
+          {/* Facet Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+            <FacetFilter
+              key="category"
+              title="Category"
+              values={facetData.categories}
+              selected={facetFilters.category}
+              onChange={(vals) => setFacetFilters(f => ({ ...f, category: vals }))}
+              color="orange"
+              isLoading={!facetsLoaded}
+            />
+
+            <FacetFilter
+              key="status"
+              title="Status"
+              values={facetData.status}
+              selected={facetFilters.status}
+              onChange={(vals) => setFacetFilters(f => ({ ...f, status: vals }))}
+              color="orange"
+              isLoading={!facetsLoaded}
+            />
+
+            <FacetFilter
+              key="batch"
+              title="YC Batch"
+              values={facetData.batches}
+              selected={facetFilters.batch}
+              onChange={(vals) => setFacetFilters(f => ({ ...f, batch: vals }))}
+              color="orange"
+              maxVisible={3}
+              isLoading={!facetsLoaded}
+            />
+          </div>
+        </Card>
+          )}
+        </div>
+      )}
+
       {isOpen && (
         <Card ref={dropdownRef} className="absolute top-full left-0 right-0 mt-2 bg-slate-900/95 border-slate-700/80 overflow-hidden z-50 shadow-2xl shadow-orange-500/10 backdrop-blur-md">
           <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -455,9 +643,9 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
                   <div key={result.objectID}>
                     {showSectionHeader && (
                       <div className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm ${
-                        result.source === 'startups' ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
+                        result.source === 'startups' ? getStartupSectionStyles() : 'text-red-400 bg-red-500/10'
                       }`}>
-                        {result.source === 'startups' ? '🟢 Active Startups' : '💀 Failed Companies'}
+                        {result.source === 'startups' ? getStartupSectionTitle() : '💀 Failed Companies'}
                       </div>
                     )}
 
@@ -514,14 +702,22 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
                               {renderHighlightedText(result._highlightResult?.name?.value, result.name)}
                             </span>
 
-                            {/* Status Badge */}
-                            <Badge className={`text-xs ${
-                              result.source === 'graveyard'
-                                ? 'bg-red-500/20 text-red-400 border-red-500/50'
-                                : 'bg-green-500/20 text-green-400 border-green-500/50'
-                            }`}>
-                              {result.source === 'graveyard' ? 'Failed' : 'Active'}
-                            </Badge>
+                            {/* Status Badge - shows actual status from data */}
+                            {result.source === 'graveyard' ? (
+                              <Badge className="text-xs bg-red-500/20 text-red-400 border-red-500/50">
+                                Failed
+                              </Badge>
+                            ) : (result as Startup).status ? (
+                              <Badge className={`text-xs ${
+                                (result as Startup).status === 'Active'
+                                  ? 'bg-green-500/20 text-green-400 border-green-500/50'
+                                  : (result as Startup).status === 'Inactive'
+                                  ? 'bg-slate-500/20 text-slate-400 border-slate-500/50'
+                                  : 'bg-blue-500/20 text-blue-400 border-blue-500/50'
+                              }`}>
+                                {(result as Startup).status}
+                              </Badge>
+                            ) : null}
 
                             {/* Time Range */}
                             <span className="text-xs text-slate-500 flex items-center gap-1">
