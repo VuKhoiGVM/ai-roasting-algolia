@@ -75,8 +75,9 @@ export default function Home() {
     } else {
       setSelectedStartupData(result)
       setSelectedGraveyard(null)
+      const survivalScore = result.survival_score ? ` with a survival score of ${result.survival_score}%` : ''
       chat.sendMessage({
-        text: `Roast this startup: ${result.name}. ${result.description}`
+        text: `Analyze why ${result.name} is successful${survivalScore}. ${result.description}. What factors contribute to their success?`
       })
     }
   }
