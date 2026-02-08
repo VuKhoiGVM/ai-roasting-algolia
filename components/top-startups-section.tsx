@@ -4,9 +4,10 @@ import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TextTooltip } from "@/components/ui/tooltip"
-import { TrendingUp, Sparkles, Info } from "lucide-react"
+import { TrendingUp, Sparkles } from "lucide-react"
 import { getTopStartups, searchStartups, getCategories, type Startup } from "@/lib/algolia"
 import { CategorySelectorPopup } from "@/components/category-selector-popup"
+import { SurvivalTooltip } from "@/components/survival-tooltip"
 import type { SurvivalScoreBreakdown } from "@/lib/survival-calculator"
 
 interface TopStartupsSectionProps {
@@ -15,28 +16,6 @@ interface TopStartupsSectionProps {
   onCategoryChange?: (category: string | null) => void
 }
 
-// Survival Score Legend Component - hover tooltip below the button
-function SurvivalScoreLegend() {
-  return (
-    <Tooltip
-      side="bottom"
-      maxWidth="20rem"
-      content={
-        <div className="flex items-center gap-3 py-1">
-          <span className="text-green-400 text-xs">70%+ Excellent</span>
-          <span className="w-px h-3 bg-slate-600"></span>
-          <span className="text-yellow-400 text-xs">40-69% Good</span>
-          <span className="w-px h-3 bg-slate-600"></span>
-          <span className="text-red-400 text-xs">&lt;40% Risky</span>
-        </div>
-      }
-    >
-      <button className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10 transition-all border border-slate-700/50 hover:border-orange-500/30">
-        <Info className="w-3.5 h-3.5" />
-      </button>
-    </Tooltip>
-  )
-}
 
 // Survival Breakdown Component - shows factor bars
 function SurvivalBreakdown({ breakdown }: { breakdown: SurvivalScoreBreakdown }) {
@@ -189,7 +168,7 @@ export function TopStartupsSection({ onSelect, selectedCategory = null, onCatego
           <Sparkles className="w-3 h-3 mr-1" />
           By Survival Score
         </Badge>
-        <SurvivalScoreLegend />
+        <SurvivalTooltip />
       </div>
 
       {/* Category Pills - Fixed height container */}

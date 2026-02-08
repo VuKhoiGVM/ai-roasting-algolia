@@ -1,5 +1,4 @@
 import { ArrowRight, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface PivotCardProps {
   pivots: string[];
@@ -17,15 +16,18 @@ export function PivotCard({ pivots, onPivotClick }: PivotCardProps) {
       </h4>
       <div className="space-y-2">
         {pivots.map((pivot, idx) => (
-          <Button
+          <button
             key={idx}
-            onClick={() => onPivotClick?.(pivot)}
-            variant="outline"
-            className="w-full justify-start text-left h-auto py-3 px-4 border-cyan-500/30 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:text-cyan-400 transition-all group"
+            onClick={(e) => {
+              e.stopPropagation()
+              onPivotClick?.(pivot)
+            }}
+            className="w-full text-left py-3 px-4 border border-cyan-500/30 text-slate-300 hover:bg-cyan-500/10 hover:border-cyan-500/50 hover:text-cyan-400 transition-all group rounded-md flex items-start gap-2 min-h-0"
+            type="button"
           >
-            <span className="flex-1">{pivot}</span>
-            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </Button>
+            <span className="flex-1 break-words text-left leading-snug text-sm whitespace-normal">{pivot}</span>
+            <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+          </button>
         ))}
       </div>
     </div>

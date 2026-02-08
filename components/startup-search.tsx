@@ -502,7 +502,7 @@ export default function StartupSearch({ onSelect }: StartupSearchProps) {
             }
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Search startups or failed companies (e.g., Airbnb, Quibi)... ↑↓ navigate, Esc to see recent"
+          placeholder="Search startups or failed companies (e.g., AI, Food)... ↑↓ navigate, Esc to see recent"
           className="pl-12 h-14 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 text-lg focus:border-orange-500/50 focus:ring-orange-500/20 backdrop-blur-sm transition-all focus:shadow-[0_0_20px_rgba(249,115,22,0.15)]"
         />
         {isSearching && (

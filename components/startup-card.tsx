@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Building2, Users, TrendingUp, DollarSign, ExternalLink } from "lucide-react"
+import { SurvivalTooltip } from "@/components/survival-tooltip"
 
 interface StartupCardProps {
   startup: {
@@ -114,18 +115,21 @@ export default function StartupCard({ startup }: StartupCardProps) {
 
         {startup.survival_score !== undefined && (
           <div className="pt-2">
-            <Badge
-              variant="outline"
-              className={
-                startup.survival_score >= 70
-                  ? "bg-green-500/20 text-green-400 border-green-500/30"
-                  : startup.survival_score >= 40
-                  ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                  : "bg-red-500/20 text-red-400 border-red-500/30"
-              }
-            >
-              Survival Score: {startup.survival_score}%
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={
+                  startup.survival_score >= 70
+                    ? "bg-green-500/20 text-green-400 border-green-500/30"
+                    : startup.survival_score >= 40
+                    ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                    : "bg-red-500/20 text-red-400 border-red-500/30"
+                }
+              >
+                Survival Score: {startup.survival_score}%
+              </Badge>
+              <SurvivalTooltip score={startup.survival_score} />
+            </div>
           </div>
         )}
       </CardContent>

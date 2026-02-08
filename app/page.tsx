@@ -18,6 +18,7 @@ import { GraveyardSection } from "@/components/metrics/graveyard-section"
 import { PivotCard } from "@/components/metrics/pivot-card"
 import { type Startup, type FailedStartup } from "@/lib/algolia"
 import { DynamicBackground } from "@/components/dynamic-background"
+import { MarkdownMessage } from "@/components/markdown-message"
 
 const transport = new DefaultChatTransport({
   api: `https://${process.env.NEXT_PUBLIC_ALGOLIA_APP_ID}.algolia.net/agent-studio/1/agents/${process.env.NEXT_PUBLIC_ALGOLIA_AGENT_ID}/completions?compatibilityMode=ai-sdk-5`,
@@ -153,7 +154,7 @@ export default function Home() {
             </span>
           </div>
           <p className="text-slate-400 max-w-xl mx-auto text-sm">
-            Before you quit your job, get an honest reality check. We analyze your idea against <span className="text-orange-400 font-medium">2,000+ real startups</span> and <span className="text-red-400 font-medium">400+ failures</span>—so you don't become one.
+            Before you quit your job, get an honest reality check. We analyze your idea against <span className="text-orange-400 font-medium">2,500+ real startups</span> and <span className="text-red-400 font-medium">400+ failures</span>—so you don't become one.
           </p>
         </div>
 
@@ -196,6 +197,39 @@ export default function Home() {
                   <p className="text-slate-400 text-sm max-w-xs mb-4">
                     Click a startup above or describe your idea below
                   </p>
+
+                  {/* Quick Suggestions */}
+                  <div className="w-full max-w-sm mt-2">
+                    <p className="text-xs text-slate-500 mb-3">Try these examples:</p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {[
+                        "An AI-powered dog walking app",
+                        "Uber for pet sitting",
+                        "A B2B SaaS for coffee shops"
+                      ].map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          onClick={() => {
+                            setInput(suggestion)
+                            setTimeout(() => {
+                              chat.sendMessage({ text: suggestion })
+                              setInput("")
+                            }, 100)
+                          }}
+                          className="px-3 py-1.5 text-xs bg-slate-800/50 hover:bg-orange-500/20 border border-slate-700 hover:border-orange-500/30 text-slate-400 hover:text-orange-400 rounded-full transition-all"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Guide text */}
+                  <div className="mt-6 p-3 bg-slate-800/30 rounded-lg border border-slate-700/50 max-w-sm">
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      <span className="text-orange-400 font-medium">💡 Tip:</span> Be specific about your idea. Include details like target market, revenue model, or unique features for better analysis.
+                    </p>
+                  </div>
                 </div>
               ) : (
                 messagesWithMetrics.map((message: any) => (
@@ -226,7 +260,7 @@ export default function Home() {
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Describe your startup idea..."
+                  placeholder="E.g., 'A marketplace for connecting freelance designers with startups' or 'Roast Stripe for competitors'"
                   className="flex-1 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-orange-500/50 focus:ring-orange-500/20"
                   disabled={isLoading}
                 />
@@ -269,34 +303,59 @@ function MessageBubble({ message, onPivotClick }: { message: any; onPivotClick?:
     .map((p: any) => p.text || '')
     .join('') || ''
 
+  const hasMetrics = (message as any).metrics
+
+  // Extract the roast section for separate display and remove metrics from main text
+  const roastText = hasMetrics ? extractRoastSection(text) : null
+  // When metrics exist, don't show main text (everything is in metrics cards + roast section)
+  const mainText = hasMetrics ? '' : text
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-3">
-        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 shrink-0 flex items-center justify-center text-sm">
-          🔥
+      {/* Only show main message card if there's text to display (non-metrics responses) */}
+      {!hasMetrics && mainText && (
+        <div className="flex gap-3">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 shrink-0 flex items-center justify-center text-sm">
+            🔥
+          </div>
+          <Card className="px-4 py-3 flex-1 bg-slate-800/80 border border-slate-700/50">
+            <MarkdownMessage content={mainText} className="text-slate-100 text-sm" />
+          </Card>
         </div>
-        <Card className="px-4 py-3 flex-1 bg-slate-800/80 border border-slate-700/50">
-          <p className="whitespace-pre-wrap text-slate-100 text-sm">{text}</p>
-        </Card>
-      </div>
+      )}
 
       {/* Metrics Section */}
-      {(message as any).metrics && (
-        <Card className="border-orange-500/30 bg-orange-500/5 ml-11">
-          <CardContent className="p-4 space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <SurvivalMeter probability={(message as any).metrics.survivalProbability} />
-              <FundingIndicator likelihood={(message as any).metrics.fundingLikelihood} />
-            </div>
-            <SaturationMeter saturation={(message as any).metrics.marketSaturation} />
+      {hasMetrics && (
+        <div className="ml-11">
+          <Card className="border-orange-500/30 bg-orange-500/5">
+            <CardContent className="p-4 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <SurvivalMeter probability={(message as any).metrics.survivalProbability} />
+                <FundingIndicator likelihood={(message as any).metrics.fundingLikelihood} />
+              </div>
+              <SaturationMeter saturation={(message as any).metrics.marketSaturation} />
 
-            {(message as any).metrics.graveyard?.length > 0 && (
-              <GraveyardSection entries={(message as any).metrics.graveyard} />
-            )}
+              {(message as any).metrics.graveyard?.length > 0 && (
+                <GraveyardSection entries={(message as any).metrics.graveyard} />
+              )}
 
-            {(message as any).metrics.pivots?.length > 0 && (
-              <PivotCard pivots={(message as any).metrics.pivots} onPivotClick={onPivotClick} />
-            )}
+              {(message as any).metrics.pivots?.length > 0 && (
+                <PivotCard pivots={(message as any).metrics.pivots} onPivotClick={onPivotClick} />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* The Roast Section - displayed separately with markdown */}
+      {roastText && (
+        <Card className="border-red-500/30 bg-red-500/5 ml-11">
+          <CardContent className="p-4">
+            <h4 className="text-sm font-semibold text-red-400 flex items-center gap-2 mb-3">
+              <Flame className="w-4 h-4" />
+              The Roast
+            </h4>
+            <MarkdownMessage content={roastText.replace(/\*\*The Roast:\*\*/i, '').trim()} className="text-slate-200 text-sm" />
           </CardContent>
         </Card>
       )}
@@ -304,19 +363,25 @@ function MessageBubble({ message, onPivotClick }: { message: any; onPivotClick?:
   )
 }
 
+// Extract the roast section from AI response
+function extractRoastSection(text: string): string | null {
+  const roastMatch = text.match(/\*\*The Roast:\*\*([\s\S]*)/i)
+  return roastMatch ? roastMatch[0] : null
+}
+
 // Parse metrics from AI response
 function parseRoastMetrics(text: string): RoastResponse | null {
-  const survivalMatch = text.match(/\*\*Survival Probability:\s*(\d+)%?\*\*/i)
+  const survivalMatch = text.match(/\*\*Survival Probability:\*\*\s*(\d+)%?/i)
   const survivalProbability = survivalMatch ? parseInt(survivalMatch[1]) : null
 
-  const saturationMatch = text.match(/\*\*Market Saturation:\s*(Low|Medium|High)\*\*/i)
+  const saturationMatch = text.match(/\*\*Market Saturation:\*\*\s*(Low|Medium|High)/i)
   const marketSaturation = saturationMatch ? saturationMatch[1] as 'Low' | 'Medium' | 'High' : null
 
-  const fundingMatch = text.match(/\*\*Funding Likelihood:\s*(\d+)%?\*\*/i)
+  const fundingMatch = text.match(/\*\*Funding Likelihood:\*\*\s*(\d+)%?/i)
   const fundingLikelihood = fundingMatch ? parseInt(fundingMatch[1]) : null
 
   const graveyardEntries: any[] = []
-  const graveyardMatch = text.match(/\*\*💀[^*]*\*\*([\s\S]*?)(?=\*\*🔄|\*\*The Roast|\*\*Pivot|$)/i)
+  const graveyardMatch = text.match(/\*\*💀[^*]*:\*\*([\s\S]*?)(?=\*\*🔄|\*\*The Roast|\*\*Pivot|$)/i)
   if (graveyardMatch) {
     const lines = graveyardMatch[1].split('\n').filter(Boolean)
     for (const line of lines) {
@@ -342,15 +407,17 @@ function parseRoastMetrics(text: string): RoastResponse | null {
   }
 
   const pivots: string[] = []
-  const pivotMatch = text.match(/\*\*🔄[^*]*\*\*([\s\S]*?)(?=\*\*|$)/i)
+  const pivotMatch = text.match(/\*\*🔄[^*]*:\*\*([\s\S]*?)(?=\*\*|$)/i)
   if (pivotMatch) {
     const lines = pivotMatch[1].split('\n').filter(Boolean)
     for (const line of lines) {
       const pivotTextMatch = line.match(/[-•]\s*(.+)/)
       if (pivotTextMatch) {
-        const pivotText = pivotTextMatch[1].trim()
+        let pivotText = pivotTextMatch[1].trim()
+        // Skip header lines
         if (pivotText && !pivotText.includes('Pivot') && !pivotText.includes('Suggestion')) {
-          pivots.push(pivotText.replace(/^\*\*/, '').replace(/\*\*$/, '').trim())
+          // Remove ALL ** markdown bold formatting
+          pivots.push(pivotText.replace(/\*\*/g, '').replace(/:\s*/, ': ').trim())
         }
       }
     }

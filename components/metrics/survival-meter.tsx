@@ -22,7 +22,7 @@ export function SurvivalMeter({ probability = 50, breakdown }: SurvivalMeterProp
           Survival Probability
           <SurvivalTooltip score={probability} breakdown={breakdown} />
         </span>
-        <span className={`text-lg font-bold ${text} ${glow}`}>{probability ?? 50}%</span>
+        <span className={`text-lg font-bold ${text}`}>{probability ?? 50}%</span>
       </div>
       <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
         <div

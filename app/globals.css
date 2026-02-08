@@ -1,5 +1,155 @@
 @import "tailwindcss";
 
+/* Streamdown markdown styles */
+@layer base {
+  /* Markdown content styles */
+  .prose {
+    color: hsl(var(--foreground));
+    max-width: 65ch;
+  }
+
+  .prose :where(p):not(:where([class~="not-prose"] *)) {
+    margin-top: 1.25em;
+    margin-bottom: 1.25em;
+  }
+
+  .prose :where(h1, h2, h3, h4, h5, h6):not(:where([class~="not-prose"] *)) {
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .prose :where(h1):not(:where([class~="not-prose"] *)) {
+    font-size: 2.25em;
+    margin-top: 0;
+    margin-bottom: 0.8888889em;
+  }
+
+  .prose :where(h2):not(:where([class~="not-prose"] *)) {
+    font-size: 1.5em;
+    margin-top: 2em;
+    margin-bottom: 1em;
+  }
+
+  .prose :where(h3):not(:where([class~="not-prose"] *)) {
+    font-size: 1.25em;
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
+  }
+
+  .prose :where(ul, ol):not(:where([class~="not-prose"] *)) {
+    margin-top: 1.25em;
+    margin-bottom: 1.25em;
+    padding-left: 1.625em;
+  }
+
+  .prose :where(li):not(:where([class~="not-prose"] *)) {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
+
+  .prose :where(strong):not(:where([class~="not-prose"] *)) {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  .prose :where(a):not(:where([class~="not-prose"] *)) {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+  }
+
+  .prose :where(code):not(:where([class~="not-prose"] *)) {
+    color: hsl(var(--primary));
+    font-weight: 600;
+    font-size: 0.875em;
+  }
+
+  .prose :where(blockquote):not(:where([class~="not-prose"] *)) {
+    font-weight: 500;
+    font-style: italic;
+    color: hsl(var(--muted-foreground));
+    border-left-width: 0.25rem;
+    border-left-color: hsl(var(--muted));
+    quotes: "\201C""\201D""\2018""\2019";
+    margin-top: 1.6em;
+    margin-bottom: 1.6em;
+    padding-left: 1em;
+  }
+}
+
+/* Dark mode specific prose styles */
+.prose-invert {
+  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-headings: hsl(0 0% 100%);
+  --tw-prose-links: hsl(var(--primary));
+  --tw-prose-bold: hsl(0 0% 100%);
+  --tw-prose-counters: hsl(var(--muted-foreground));
+}
+
+/* Streamdown-specific fixes using data-streamdown attributes */
+[data-streamdown="heading-1"],
+[data-streamdown="heading-2"],
+[data-streamdown="heading-3"],
+[data-streamdown="heading-4"],
+[data-streamdown="heading-5"],
+[data-streamdown="heading-6"] {
+  color: #fff !important;
+  font-weight: 600 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+[data-streamdown="heading-1"] {
+  font-size: 1.5rem !important;
+}
+
+[data-streamdown="heading-2"] {
+  font-size: 1.25rem !important;
+}
+
+[data-streamdown="heading-3"] {
+  font-size: 1.1rem !important;
+}
+
+[data-streamdown="paragraph"] {
+  margin-bottom: 0.75rem !important;
+  color: #e2e8f0 !important;
+  line-height: 1.6 !important;
+}
+
+[data-streamdown="list"],
+[data-streamdown="list-item"] {
+  color: #cbd5e1 !important;
+}
+
+[data-streamdown="list"] {
+  margin-left: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+  margin-top: 0.5rem !important;
+}
+
+[data-streamdown="list-item"] {
+  margin-bottom: 0.25rem !important;
+}
+
+[data-streamdown="strong"] {
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
+[data-streamdown="link"] {
+  color: #f97316 !important;
+  text-decoration: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+[data-streamdown="link"]:hover {
+  text-decoration: underline !important;
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
 @layer base {
   :root {
     --background: 240 10% 3.9%;

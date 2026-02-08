@@ -1,3 +1,5 @@
+import { InfoTooltip } from "@/components/info-tooltip"
+
 interface SaturationMeterProps {
   saturation?: 'Low' | 'Medium' | 'High' | null;
 }
@@ -28,7 +30,18 @@ export function SaturationMeter({ saturation = 'Medium' }: SaturationMeterProps)
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-300">Market Saturation</span>
+        <span className="text-sm font-medium text-slate-300 flex items-center gap-1">
+          Market Saturation
+          <InfoTooltip title="How Market Saturation is Calculated">
+            <p className="mb-2">Based on the number of active startups in the same category:</p>
+            <ul className="space-y-1">
+              <li><span className="text-green-400">• Low (0-100 startups):</span> Blue ocean, untapped market</li>
+              <li><span className="text-yellow-400">• Medium (101-300 startups):</span> Moderate competition, established players</li>
+              <li><span className="text-red-400">• High (300+ startups):</span> Crowded market, differentiation crucial</li>
+            </ul>
+            <p className="mt-2 text-slate-400">Source: YC startup database analysis by category.</p>
+          </InfoTooltip>
+        </span>
         <span className={`text-sm font-bold ${text} px-2 py-0.5 rounded ${bgOpacity} ${border} border`}>
           {saturation}
         </span>
