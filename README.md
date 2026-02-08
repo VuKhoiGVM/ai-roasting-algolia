@@ -94,7 +94,7 @@ npm run algolia:setup-rules
 ## 🎯 How It Works
 
 1. **Search or Browse** - Find any startup or describe your own idea
-2. **AI Analysis** - Agent Studio retrieves relevant context from 2,900+ companies
+2. **AI Analysis** - Agent Studio retrieves relevant context from 2,500+ companies
 3. **Structured Response** - Get survival score, saturation level, funding likelihood, and pivot suggestions
 4. **Learn from Failures** - See similar companies that failed and why
 
