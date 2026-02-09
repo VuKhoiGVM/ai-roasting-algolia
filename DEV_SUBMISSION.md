@@ -124,20 +124,7 @@ I created two Algolia indices with rich, structured data:
 
 I configured both indices with optimized settings:
 
-**Searchable Attributes** (order matters - higher priority first):
-```javascript
-searchableAttributes: [
-  'name',           // Exact company name matches rank highest
-  'description',    // Then description content
-  'long_description',
-  'category',       // Category matches
-  'tags',           // Tag matches
-  'batch',          // YC batch
-  'location'
-]
-```
-
-**Custom Ranking** (tie-breakers after text relevance):
+**Custom Ranking** (primary - determines result order):
 ```javascript
 // Startups: Prioritize high-quality, active companies
 customRanking: [
@@ -160,6 +147,19 @@ customRanking: [
 - **is_hiring as boost** rewards actively growing companies
 - **batch recency** gives newer YC companies visibility (they need it more!)
 - **raised_amount for graveyard** shows the most dramatic failures ($3.5B Faraday Future story > $50K failure)
+
+**Searchable Attributes** (after ranking - determines which fields are searched):
+```javascript
+searchableAttributes: [
+  'name',           // Exact company name matches rank highest
+  'description',    // Then description content
+  'long_description',
+  'category',       // Category matches
+  'tags',           // Tag matches
+  'batch',          // YC batch
+  'location'
+]
+```
 
 **Typo Tolerance:** Enabled for 4+ character words, 2 typos for 8+ character words
 
