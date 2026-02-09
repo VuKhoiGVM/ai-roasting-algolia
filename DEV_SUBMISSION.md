@@ -439,13 +439,22 @@ Without Algolia's millisecond-level retrieval:
 
 ### Real Example
 
-When a user asks about "AI for legal contracts":
+When a user types "AI-powered dog walking app":
 
-**Slow retrieval:** Finds 5-10 companies, misses key competitors, gives generic advice
+**Slow retrieval:** Finds 5-10 pet tech companies, misses key competitors, gives generic advice like "the pet market is growing"
 
-**Algolia:** Retrieves 30+ relevant companies instantly, identifies proper competitors like Casetext, LegalZoom, Ironclad, provides specific competitive analysis with real company names and their outcomes
+**Algolia:** Retrieves 30+ relevant pet tech companies instantly, identifies:
+- **200+ existing competitors** in the space ( Rover, Wag, Fetch, etc.)
+- **Failed companies** like "DogVacay" (raised $14M, shut down due to saturation)
+- **Market saturation: High** with graveyard examples
+- **Survival Probability: 15%** with specific pivot suggestions
 
-This speed allows users to iterate quickly - try an idea, get feedback, pivot, try again. In one session, a user might explore 5-6 variations of their concept. Each exploration compounds their understanding of the market.
+**The AI response includes real company names:**
+> "You're entering a market with Rover ($300M raised), Wag ($300M acquired by Nest), and 200+ other pet tech startups. DogVacay raised $14M and shut down because they couldn't differentiate. Consider pivoting to B2B pet insurance (one startup in this space raised $50M)."
+
+This specific, data-backed feedback helps users understand their actual competitive landscape - not generic platitudes, but hard numbers from real companies.
+
+This speed allows users to iterate quickly - try an idea, get roasted, pivot, try again. In one session, a user might explore 5-6 variations of their concept. Each exploration compounds their understanding of the market.
 
 ---
 
