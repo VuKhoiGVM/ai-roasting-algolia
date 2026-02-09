@@ -6,7 +6,7 @@
 
 ## What I Built
 
-**Startup Roast** is an AI-powered startup idea validator that provides brutally honest feedback by analyzing your idea against a database of **2,525+ real YC startups** and **403+ failed companies**.
+**Startup Roast** is an AI-powered startup idea validator that provides brutally honest feedback by analyzing your idea against a database of **2,500+ real YC startups** and **403+ failed companies**.
 
 Before you quit your job, raise money from friends and family, or spend months building something nobody wants - get a reality check in seconds, not months.
 
@@ -41,7 +41,7 @@ Startup Roast combines conversational AI with retrieval from thousands of real c
 
 [![Watch the 60-second demo](https://img.youtube.com/vi/TuSimU_864U/0.jpg)](https://www.youtube.com/watch?v=TuSimU_864U)
 
-**Repository:** https://github.com/yourusername/startup-roast
+**Repository:** https://github.com/VuKhoiGVM/ai-roasting-algolia.git
 
 ---
 
@@ -49,33 +49,182 @@ Startup Roast combines conversational AI with retrieval from thousands of real c
 
 ### Data Indexed
 
-I created two Algolia indices:
+I created two Algolia indices with rich, structured data:
 
-1. **startups** (2,525 records) - YC companies with survival scores
-2. **graveyard** (403 records) - Failed startups with detailed failure reasons
+#### 1. Startups Index (2,500 records)
 
-Each record contains rich metadata:
-- Company name, description, category, batch
-- Survival score breakdown (growth, market, team, funding, trend)
-- Funding amounts, hiring status, saturation levels
-- For graveyard: what they did, why they failed, key takeaways
+**Data Structure:**
+```json
+{
+  "objectID": "yc_31306",
+  "name": "Martini",
+  "description": "Collaborative AI-native filmmaking for professionals",
+  "long_description": "Martini is a collaborative, AI-native platform...",
+  "batch": "W26",
+  "status": "Active",
+  "tags": ["Generative AI", "Entertainment", "Design Tools"],
+  "location": "San Francisco",
+  "year_founded": 2025,
+  "team_size": 2,
+  "website": "https://martini.film",
+  "is_hiring": false,
+  "open_jobs": 0,
+  "category": "Generative AI",
+  "survival_score": 64,
+  "survival_breakdown": {
+    "total": 64,
+    "growth": 14,
+    "market": 100,
+    "team": 100,
+    "funding": 60,
+    "trend": 100,
+    "penalty": 0
+  },
+  "saturation": "Medium"
+}
+```
+
+**Searchable Attributes:** name, description, long_description, category, sector, tags, batch, location
+
+**Custom Ranking:** Higher `survival_score` → higher rank, then hiring companies get boost
+
+**Facets:** category, status, sector, batch, is_hiring, saturation, year_founded
+
+#### 2. Graveyard Index (403 records)
+
+**Data Structure:**
+```json
+{
+  "objectID": "fail_Health_Care_0",
+  "name": "Aira Health",
+  "sector": "Health Care",
+  "category": "Health Care",
+  "years_of_operation": "2015-2019",
+  "what_they_did": "Personalized asthma/allergy app",
+  "how_much_raised": "$12M",
+  "raised_amount": 12000000,
+  "why_they_failed": "Small user base and cash shortage",
+  "takeaway": "Niche apps need big audiences",
+  "year_founded": 2015,
+  "year_closed": 2019,
+  "lost_to_giants": true,
+  "no_budget": true,
+  "competition": true,
+  "poor_market_fit": true
+}
+```
+
+**Searchable Attributes:** name, what_they_did, why_they_failed, takeaway, category, sector
+
+**Custom Ranking:** Higher `raised_amount` → higher rank (bigger failures are more educational), then more recent failures
+
+**Facets:** 40+ failure reason flags (lost_to_giants, no_budget, competition, poor_market_fit, monetization_failure, etc.)
+
+### Index Configuration
+
+I configured both indices with optimized settings:
+
+**Searchable Attributes** (order matters - higher priority first):
+```javascript
+searchableAttributes: [
+  'name',           // Exact company name matches rank highest
+  'description',    // Then description content
+  'long_description',
+  'category',       // Category matches
+  'tags',           // Tag matches
+  'batch',          // YC batch
+  'location'
+]
+```
+
+**Custom Ranking** (tie-breakers after relevance):
+```javascript
+// Startups: highest survival score first
+customRanking: [
+  'desc(survival_score)',  // Quality signal
+  'desc(is_hiring)',       // Active/growing signal
+  'asc(category)'          // Alphabetical tie-break
+]
+
+// Graveyard: biggest failures first
+customRanking: [
+  'desc(raised_amount)',   // More $$ raised = more interesting failure
+  'desc(year_closed)'      // More recent = more relevant
+]
+```
+
+**Typo Tolerance:** Enabled for 4+ character words, 2 typos for 8+ character words
+
+### Query Rules
+
+I implemented 20+ query rules to enhance search experience:
+
+#### AI/ML Boost Rules
+```javascript
+// Searching "ai", "machine learning", "llm", "gpt"
+// → Automatically filter to AI/ML categories
+{
+  objectID: 'ai-boost-basic',
+  conditions: [{ pattern: 'ai', anchoring: 'contains' }],
+  consequence: {
+    params: {
+      filters: 'category:Artificial Intelligence OR category:AI OR category:Machine Learning'
+    }
+  }
+}
+```
+
+#### Failure Query Redirects
+```javascript
+// Searching "failed", "dead", "shutdown", "bankrupt"
+// → Prioritize graveyard results
+{
+  objectID: 'failure-redirect-failed',
+  conditions: [{ pattern: 'failed', anchoring: 'contains' }],
+  consequence: {
+    filterPromotes: false,
+    userData: { showGraveyardFirst: true }
+  }
+}
+```
+
+#### Category Auto-Filters
+```javascript
+// Searching exactly "fintech" → auto-filter to Fintech/Finance/Payments
+// Searching exactly "healthcare" → auto-filter to Healthcare/Medical
+// Searching exactly "saas" → auto-filter to SaaS/B2B
+{
+  objectID: 'category-fintech',
+  conditions: [{ pattern: 'fintech', anchoring: 'is' }],
+  consequence: {
+    params: {
+      automaticFacetFilters: [['category:Fintech'], ['category:Finance'], ['category:Payments']]
+    }
+  }
+}
+```
 
 ### Agent Configuration
 
-In Algolia Agent Studio, I configured:
+In Algolia Agent Studio, I configured a custom agent:
 
-**Tools:** Both indices enabled for retrieval
-- `startups` index search
-- `graveyard` index search
+#### Tools Configuration
+Both indices enabled for retrieval:
+- **startups** index search - For successful company analysis
+- **graveyard** index search - For failure pattern analysis
 
-**LLM:** Google Gemini 2.0 Flash for fast, intelligent responses
+#### LLM Selection
+**Google Gemini 2.0 Flash** - Chosen for:
+- Fast response times (<1 second)
+- Strong reasoning capabilities
+- Good with structured output
 
-**System Prompt:** Engineered to return structured data with specific formatting for parsing:
+#### System Prompt Engineering
 
 ```
 You are Startup Roast - a brutally honest startup advisor. Analyze ideas against real data.
 
-Your response must follow this exact format:
+Your response MUST follow this exact format:
 
 **Survival Probability:** X%
 **Market Saturation:** [Low/Medium/High]
@@ -88,42 +237,69 @@ Your response must follow this exact format:
 - [Specific pivot idea with reasoning]
 
 **The Roast:**
-[Brutally honest analysis with specific references to similar companies. Be direct but constructive.]
+[Brutally honest analysis with specific references to similar companies from the retrieved data.
+Be direct but constructive. Reference actual companies when making comparisons.]
 ```
 
-This structured output allows the frontend to parse and display visual metrics cards separately from the conversational roast text.
+**Key Prompt Techniques Used:**
+1. **Structured output format** - Enables frontend parsing for visual metrics
+2. **Specific section markers** - `**💀 The Graveyard:**` for regex parsing
+3. **Retrieval grounding** - "Reference actual companies from retrieved data"
+4. **Tone setting** - "Brutally honest but constructive"
 
 ### Frontend Integration
 
-Using Vercel AI SDK v6 with direct Agent Studio transport:
+Using **Vercel AI SDK v6** with direct Agent Studio transport (no backend needed!):
 
 ```typescript
-import { DefaultChatTransport } from "ai"
+import { useChat, DefaultChatTransport } from "ai"
 
 const transport = new DefaultChatTransport({
   api: `https://${appId}.algolia.net/agent-studio/1/agents/${agentId}/completions?compatibilityMode=ai-sdk-5`,
   headers: {
     "x-algolia-application-id": appId,
-    "x-algolia-api-key": searchKey,
+    "x-algolia-api-key": searchKey,  // Search-only key (safe for client)
   },
 })
 
 const chat = useChat({ transport })
+
+// Send message
+chat.sendMessage({ text: userInput })
 ```
 
-The frontend parses the structured AI response and renders:
-- Progress bars for survival probability and funding likelihood
-- Color-coded saturation meter
-- Graveyard cards with failure reasons
-- Clickable pivot suggestion chips
+**Response Parsing:**
+```typescript
+// Extract metrics from structured AI response
+const survivalMatch = text.match(/\*\*Survival Probability:\*\*\s*(\d+)%?/i)
+const saturationMatch = text.match(/\*\*Market Saturation:\*\*\s*(Low|Medium|High)/i)
+const fundingMatch = text.match(/\*\*Funding Likelihood:\*\*\s*(\d+)%?/i)
+
+// Parse graveyard entries
+const graveyardMatch = text.match(/\*\*💀[^*]*:\*\*([\s\S]*?)(?=\*\*🔄|\*\*The Roast|$)/i)
+// Parse pivot suggestions
+const pivotMatch = text.match(/\*\*🔄[^*]*:\*\*([\s\S]*?)(?=\*\*|$)/i)
+```
+
+**Rendering Components:**
+- Survival probability → colored progress bar (green/yellow/red)
+- Market saturation → visual meter with emoji indicators
+- Funding likelihood → percentage meter with confidence level
+- Graveyard section → cards showing failed companies with reasons
+- Pivot suggestions → clickable chips that re-analyze the new direction
 
 ### Why This Approach
 
 Instead of building a custom RAG pipeline with vector search and prompt engineering, Algolia Agent Studio gave me:
-- **Instant retrieval** - keyword and semantic search in one API
-- **Grounded responses** - AI cites actual companies, not hallucinations
-- **Structured output** - parseable metrics without complex prompt engineering
-- **Zero infrastructure** - no vector database, no embedding API, no backend needed
+
+| Feature | Custom RAG Pipeline | Algolia Agent Studio |
+|---------|-------------------|---------------------|
+| **Infrastructure** | Vector DB, embedding API, backend server | Zero infra needed |
+| **Setup Time** | Days to weeks | Hours |
+| **Retrieval Speed** | 2-5 seconds | <100ms |
+| **Cost** | Multiple API costs | Single platform |
+| **Maintenance** | High | Low |
+| **Grounding** | Manual prompt engineering | Built-in RAG |
 
 ---
 
@@ -157,7 +333,7 @@ When a user asks about "AI for legal contracts":
 
 **Slow retrieval:** Finds 5-10 companies, misses key competitors, gives generic advice
 
-**Algolia:** Retrieves 30+ relevant companies instantly, identifies proper competitors, provides specific competitive analysis with real company names and their outcomes
+**Algolia:** Retrieves 30+ relevant companies instantly, identifies proper competitors like Casetext, LegalZoom, Ironclad, provides specific competitive analysis with real company names and their outcomes
 
 This speed allows users to iterate quickly - try an idea, get feedback, pivot, try again. In one session, a user might explore 5-6 variations of their concept. Each exploration compounds their understanding of the market.
 
@@ -169,7 +345,7 @@ This speed allows users to iterate quickly - try an idea, get feedback, pivot, t
 - **AI:** Algolia Agent Studio, Vercel AI SDK v6, Google Gemini 2.0 Flash
 - **Search:** Algolia JavaScript SDK v5.35.0
 - **Styling:** Tailwind CSS v4, shadcn/ui
-- **Data:** 2,525 YC startups + 403 failed companies
+- **Data:** 2,500 YC startups + 403 failed companies
 
 ---
 
