@@ -146,7 +146,7 @@ customRanking: [
 - **survival_score first** ensures the best companies surface when browsing
 - **is_hiring as boost** rewards actively growing companies
 - **batch recency** gives newer YC companies visibility (they need it more!)
-- **raised_amount for graveyard** shows the most dramatic failures ($3.5B Faraday Future story > $50K failure)
+- **raised_amount for graveyard** shows the most dramatic failures (\$3.5B Faraday Future story > \$50K failure)
 
 **Searchable Attributes** (after ranking - determines which fields are searched):
 ```javascript
@@ -165,48 +165,109 @@ searchableAttributes: [
 
 ### Query Rules
 
-I implemented 20+ query rules to enhance search experience:
+I implemented query rules for **both indices** to enhance search experience:
 
-#### AI/ML Boost Rules
+#### Startups Index Query Rules
+
+**AI/ML Category Boost:**
 ```javascript
-// Searching "ai", "machine learning", "llm", "gpt"
-// → Automatically filter to AI/ML categories
+// Searching "ai", "ml", "llm", "gpt" → Boost AI/ML companies to top
 {
-  objectID: 'ai-boost-basic',
-  conditions: [{ pattern: 'ai', anchoring: 'contains' }],
+  objectID: 'ai-boost',
+  condition: { pattern: 'ai', anchoring: 'contains' },
   consequence: {
+    filterPromotes: true,
     params: {
-      filters: 'category:Artificial Intelligence OR category:AI OR category:Machine Learning'
+      filters: 'category:Artificial Intelligence OR category:Machine Learning OR category:Generative AI'
     }
   }
 }
 ```
 
-#### Failure Query Redirects
+**Recent Batch Boost:**
 ```javascript
-// Searching "failed", "dead", "shutdown", "bankrupt"
-// → Prioritize graveyard results
+// Searching "recent" or "new" → Show latest YC batches first
 {
-  objectID: 'failure-redirect-failed',
-  conditions: [{ pattern: 'failed', anchoring: 'contains' }],
+  objectID: 'recent-boost',
+  condition: { pattern: 'recent', anchoring: 'contains' },
   consequence: {
     filterPromotes: false,
-    userData: { showGraveyardFirst: true }
+    params: {
+      filters: 'batch:W26 OR batch:W25 OR batch:W24'
+    }
   }
 }
 ```
 
-#### Category Auto-Filters
+**Hiring Companies Boost:**
 ```javascript
-// Searching exactly "fintech" → auto-filter to Fintech/Finance/Payments
-// Searching exactly "healthcare" → auto-filter to Healthcare/Medical
-// Searching exactly "saas" → auto-filter to SaaS/B2B
+// Searching "hiring" or "growing" → Prioritize active companies
 {
-  objectID: 'category-fintech',
-  conditions: [{ pattern: 'fintech', anchoring: 'is' }],
+  objectID: 'hiring-boost',
+  condition: { pattern: 'hiring', anchoring: 'contains' },
   consequence: {
+    filterPromotes: true,
     params: {
-      automaticFacetFilters: [['category:Fintech'], ['category:Finance'], ['category:Payments']]
+      filters: 'is_hiring:true'
+    }
+  }
+}
+```
+
+#### Graveyard Index Query Rules
+
+**High-Profile Failures:**
+```javascript
+// Searching "big failure", "billion", "expensive" → Show companies that raised $100M+
+{
+  objectID: 'big-failure-boost',
+  condition: { pattern: 'billion', anchoring: 'contains' },
+  consequence: {
+    filterPromotes: true,
+    params: {
+      numericFilters: 'raised_amount>=100000000'
+    }
+  }
+}
+```
+
+**Recent Failures:**
+```javascript
+// Searching "recent failure", "shutdown 2024" → Show latest closures
+{
+  objectID: 'recent-failure',
+  condition: { pattern: 'recent', anchoring: 'contains' },
+  consequence: {
+    filterPromotes: false,
+    params: {
+      numericFilters: 'year_closed>=2023'
+    }
+  }
+}
+```
+
+**Specific Failure Reasons:**
+```javascript
+// Searching "ran out of cash", "no market", "competition"
+// → Auto-filter by failure reason flags
+{
+  objectID: 'cash-failure',
+  condition: { pattern: 'ran out of cash', anchoring: 'contains' },
+  consequence: {
+    filterPromotes: true,
+    params: {
+      filters: 'ran_out_of_cash:true'
+    }
+  }
+}
+
+{
+  objectID: 'competition-failure',
+  condition: { pattern: 'competition', anchoring: 'contains' },
+  consequence: {
+    filterPromotes: true,
+    params: {
+      filters: 'competition:true OR lost_to_giants:true'
     }
   }
 }
