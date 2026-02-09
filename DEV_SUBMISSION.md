@@ -398,47 +398,6 @@ Be direct but constructive. Reference actual companies when making comparisons.]
 3. **Retrieval grounding** - "Reference actual companies from retrieved data"
 4. **Tone setting** - "Brutally honest but constructive"
 
-### Frontend Integration
-
-Using **Vercel AI SDK v6** with direct Agent Studio transport (no backend needed!):
-
-```typescript
-import { useChat, DefaultChatTransport } from "ai"
-
-const transport = new DefaultChatTransport({
-  api: `https://${appId}.algolia.net/agent-studio/1/agents/${agentId}/completions?compatibilityMode=ai-sdk-5`,
-  headers: {
-    "x-algolia-application-id": appId,
-    "x-algolia-api-key": searchKey,  // Search-only key (safe for client)
-  },
-})
-
-const chat = useChat({ transport })
-
-// Send message
-chat.sendMessage({ text: userInput })
-```
-
-**Response Parsing:**
-```typescript
-// Extract metrics from structured AI response
-const survivalMatch = text.match(/\*\*Survival Probability:\*\*\s*(\d+)%?/i)
-const saturationMatch = text.match(/\*\*Market Saturation:\*\*\s*(Low|Medium|High)/i)
-const fundingMatch = text.match(/\*\*Funding Likelihood:\*\*\s*(\d+)%?/i)
-
-// Parse graveyard entries
-const graveyardMatch = text.match(/\*\*💀[^*]*:\*\*([\s\S]*?)(?=\*\*🔄|\*\*The Roast|$)/i)
-// Parse pivot suggestions
-const pivotMatch = text.match(/\*\*🔄[^*]*:\*\*([\s\S]*?)(?=\*\*|$)/i)
-```
-
-**Rendering Components:**
-- Survival probability → colored progress bar (green/yellow/red)
-- Market saturation → visual meter with emoji indicators
-- Funding likelihood → percentage meter with confidence level
-- Graveyard section → cards showing failed companies with reasons
-- Pivot suggestions → clickable chips that re-analyze the new direction
-
 ### Why This Approach
 
 Instead of building a custom RAG pipeline with vector search and prompt engineering, Algolia Agent Studio gave me:
