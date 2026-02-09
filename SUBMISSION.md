@@ -1,121 +1,115 @@
-# Demo Script (2-3 minutes)
+# Demo Script (60-90 seconds)
 
-## Scene 1: Introduction (0:00 - 0:20)
+## Scene 1: Hook - The Problem (0:00 - 0:10)
 
-**Visual:** Homepage with animated background and logo
+**Visual:** Quick scroll of homepage
 
 **Narrator:**
-"Hey everyone! Today I'm showing you Startup Roast - an AI-powered idea validator that gives you brutally honest feedback before you quit your job to pursue your startup dream."
+"Every year, thousands of founders start companies based on gut feelings, while decades of startup data goes ignored. I built Startup Roast to fix that."
 
 **Actions:**
-- Scroll to show the full homepage
-- Point out "Top Startups" and "Notable Failures" sections
+- Show search bar and "Ready to Roast" state
+- Quick glance at Top Startups and Notable Failures sections
 
 ---
 
-## Scene 2: Search & Discovery (0:20 - 0:45)
+## Scene 2: The Roast - User's Idea (0:10 - 0:35)
 
-**Visual:** Search bar with typing animation
+**Visual:** Click suggestion chip "An AI-powered dog walking app"
 
 **Narrator:**
-"Let's start by searching for a startup. I'll look for 'Stripe competitor' to see what's already out there."
+"Let's say you have an idea for an AI dog walking app. Click and in seconds..."
 
 **Actions:**
-- Type "stripe" in search bar
-- Show dropdown results with startups
-- Click on a startup card
-- Show the tooltip with survival score breakdown
+- Click suggestion chip
+- Show AI typing/loading briefly
+- Metrics cards animate in:
+  - Survival Probability: 15% (red)
+  - Market Saturation: High (red meter)
+  - Funding Likelihood: Low
 
 **Narrator:**
-"You can see active startups with their survival scores, and also learn from failed companies. See those red cards? Those are startups that raised millions but still failed."
+"Ouch. 15% survival probability because pet tech is oversaturated with 200+ competitors. But here's the best part..."
 
 ---
 
-## Scene 3: The AI Roast (0:45 - 1:30)
+## Scene 3: Pivot & Learn (0:35 - 0:55)
 
-**Visual:** Chat interface with typing animation
+**Visual:** Scroll to show Graveyard and Pivot sections
 
 **Narrator:**
-"Now for the fun part - let's describe an idea and get roasted by the AI!"
+"It shows you real companies that failed doing exactly this, and gives you pivot suggestions."
 
 **Actions:**
-- Click on suggestion chip: "An AI-powered dog walking app"
-- Show AI thinking animation
-- Show metrics cards appearing:
-  - Survival Probability meter
-  - Market Saturation indicator
-  - Funding Likelihood meter
-  - Graveyard section with similar failures
-  - Pivot suggestions
-
-**Narrator:**
-"Wow, the AI just analyzed my idea against 2,900+ real startups in milliseconds! Look at this - 15% survival probability because the pet tech market is saturated with over 200 competitors. But it's giving me actionable pivot ideas..."
-
----
-
-## Scene 4: Pivot & Methodology (1:30 - 2:00)
-
-**Visual:** Clicking a pivot suggestion
-
-**Narrator:**
-"I love this feature - click any pivot suggestion and it instantly analyzes that direction instead."
-
-**Actions:**
-- Hover over "Survival Score" info button
-- Show tooltip with methodology breakdown
+- Hover over Graveyard section showing similar failures
 - Click a pivot suggestion: "B2B pet insurance platform"
-- Show updated analysis with better survival score
+- Show updated analysis with better score
 
 **Narrator:**
-"The survival score isn't random - it considers growth rate, market saturation, team quality, funding signals, and even matches your idea against similar failures in the graveyard."
+"One click and it analyzes the pivot. B2B insurance has way better odds."
 
 ---
 
-## Scene 5: Real Startup Comparison (2:00 - 2:30)
+## Scene 4: Successful Startup Analysis (0:55 - 1:10)
 
-**Visual:** Selecting a real YC startup
+**Visual:** Click a top startup from carousel
 
 **Narrator:**
-"It works with real startups too. Let's see what it says about an actual YC company."
+"It also works in reverse - click any successful startup to learn WHY they're winning."
 
 **Actions:**
-- Click on a top startup from the carousel
-- Show the AI analysis
-- Point out how it references real data
+- Click a top startup (e.g., Stripe or similar)
+- Show AI analysis with positive insights
+- Briefly show the survival score breakdown tooltip
 
 **Narrator:**
-"This is all powered by Algolia Agent Studio with RAG - it's not just making things up, it's actually retrieving relevant context from thousands of real companies to give grounded, actionable feedback."
+"All powered by Algolia Agent Studio retrieving context from 2,900+ real companies in milliseconds."
 
 ---
 
-## Scene 6: Closing (2:30 - 3:00)
+## Scene 5: Closing (1:10 - 1:20)
 
-**Visual:** Full page scroll, showing all features
+**Visual:** Full page view, then live URL
 
 **Narrator:**
-"Startup Roast helps you validate ideas in seconds, not months. Before you build anything, before you raise money, get an honest reality check from data, not just your friends who want to be nice."
+"Startup Roast - validate ideas in seconds, not months. Check it out at [your-url.vercel.app]. Thanks!"
 
 **Actions:**
-- Show the live URL
-- Quick montage of features
-
-**Narrator:**
-"Check it out at [your-url.vercel.app] and may your startup survival score be ever in your favor. Thanks for watching!"
+- Show URL
+- End
 
 ---
 
-## Key Moments to Capture:
+## Quick Take Version (45 seconds)
 
-1. **The "Aha!" moment** when metrics cards appear with visual indicators
-2. **The graveyard section** showing real failures with reasons
-3. **The pivot suggestions** being clickable and updating the chat
-4. **The info tooltips** explaining the methodology
-5. **The unified search** returning both startups and failures
+If you need an even shorter version for social media:
 
-## Screen Recording Tips:
+**Scene 1 (0:00-0:15):** "I built Startup Roast - paste your startup idea and get brutally honest feedback from AI that's analyzed 2,900+ real companies."
 
-- Use 1080p or higher resolution
-- Enable "Highlight mouse clicks" in your screen recorder
-- Speak clearly and enthusiastically
-- Keep cursor movements smooth and intentional
-- Pause briefly after each action for viewers to absorb
+**Scene 2 (0:15-0:35):** Show dog walking app getting roasted (15% survival), then pivoting to B2B insurance with better odds.
+
+**Scene 3 (0:35-0:45):** "All powered by Algolia Agent Studio. Try it at [url]."
+
+---
+
+## Key Features to Highlight
+
+In the short demo, prioritize these "wow" moments:
+
+1. **Instant structured metrics** - visual progress bars appear immediately
+2. **Color-coded feedback** - red/yellow/green for quick understanding
+3. **Real graveyard examples** - actual failed companies with reasons
+4. **One-click pivots** - click and instantly re-analyze
+5. **Fast retrieval** - emphasize "in milliseconds" powered by Algolia
+
+---
+
+## Screen Recording Tips for Short Demo
+
+- **Cut all loading time** - edit out any waiting
+- **Pre-load the page** - have it ready before recording
+- **Use keyboard shortcuts** - faster than mouse clicks
+- **Zoom in** on key metrics when they appear
+- **Add text overlays** for key stats (15% survival, etc.)
+- **Upbeat background music** (optional but helps engagement)
+- **Caption key phrases** for viewers watching without sound
