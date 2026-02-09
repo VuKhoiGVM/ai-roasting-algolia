@@ -26,22 +26,22 @@
 
 ## 📸 Screenshots
 
-![Homepage](docs/screenshots/ui-current.png)
+![Homepage](docs/screenshots/official.png)
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: Next.js 16.1.6 (App Router + Turbopack), React 19
-- **AI**: Algolia Agent Studio, Vercel AI SDK v6, Google Gemini 2.0 Flash
+- **AI**: Algolia Agent Studio, Vercel AI SDK v6, Google Gemini 2.5 Flash
 - **Search**: Algolia JavaScript SDK v5.35.0
 - **Styling**: Tailwind CSS v4, shadcn/ui
-- **Data**: 2,525 YC startups + 403 failed companies
+- **Data**: 2,500 YC startups + 403 failed companies
 
 ## 📦 Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/startup-roast.git
-cd startup-roast
+git clone https://github.com/VuKhoiGVM/ai-roasting-algolia.git
+cd ai-roasting-algolia
 
 # Install dependencies
 npm install
@@ -104,21 +104,38 @@ npm run algolia:setup-rules
 
 ```
 ├── app/
-│   ├── page.tsx              # Main application with chat
-│   ├── layout.tsx            # Root layout
-│   └── globals.css           # Cyberpunk theme styles
+│   ├── page.tsx                    # Main application with chat interface
+│   ├── layout.tsx                  # Root layout
+│   ├── globals.css                 # Cyberpunk theme styles
+│   ├── error.tsx                   # Error boundary
+│   └── not-found.tsx               # 404 page
 ├── components/
-│   ├── startup-search.tsx    # Unified search (startups + graveyard)
-│   ├── top-startups-section.tsx
-│   ├── mega-failures-section.tsx
-│   ├── metrics/              # Survival, saturation, funding components
-│   └── survival-tooltip.tsx  # Methodology explanation
+│   ├── startup-search.tsx          # Unified search (startups + graveyard)
+│   ├── top-startups-section.tsx    # Top 5 startups by survival score
+│   ├── mega-failures-section.tsx   # Top 4 failures by funding
+│   ├── startup-card.tsx            # Individual startup card component
+│   ├── dynamic-background.tsx      # Animated canvas background
+│   ├── category-selector-popup.tsx # Category filter with popup
+│   ├── survival-tooltip.tsx        # Survival score methodology tooltip
+│   ├── info-tooltip.tsx            # Reusable info tooltip
+│   ├── markdown-message.tsx        # Streamdown markdown wrapper
+│   ├── metrics/                    # Metrics visualization components
+│   │   ├── survival-meter.tsx      # Survival probability progress bar
+│   │   ├── saturation-meter.tsx    # Market saturation indicator
+│   │   ├── funding-indicator.tsx   # Funding likelihood meter
+│   │   ├── graveyard-section.tsx   # Similar failures display
+│   │   └── pivot-card.tsx          # Clickable pivot suggestions
+│   └── ui/                         # shadcn/ui components
 ├── lib/
-│   ├── algolia.ts            # Algolia v5 search client
-│   └── survival-calculator.ts # Survival score algorithm
+│   ├── algolia.ts                  # Algolia v5 search client
+│   ├── survival-calculator.ts      # Survival score algorithm
+│   ├── startups.ts                 # Fallback hardcoded data
+│   └── utils.ts                    # Utility functions
 └── scripts/
-    ├── process-data.py       # CSV → JSON processing
-    └── upload-to-algolia.js  # Batch upload script
+    ├── process-data.py             # CSV → JSON processing
+    ├── upload-to-algolia.js        # Batch upload to Algolia
+    ├── setup-query-rules.js        # Configure query rules
+    └── configure-ranking.js        # Configure ranking settings
 ```
 
 ## 🧠 Survival Score Algorithm
