@@ -39,7 +39,7 @@ Startup Roast combines conversational AI with retrieval from thousands of real c
 
 **Video Demo:** https://youtu.be/TuSimU_864U
 
-[![Watch the 60-second demo](https://img.youtube.com/vi/TuSimU_864U/0.jpg)](https://www.youtube.com/watch?v=TuSimU_864U)
+[![Watch the 60-second demo](/docs/screenshots/official.png)](https://www.youtube.com/watch?v=TuSimU_864U)
 
 **Repository:** https://github.com/VuKhoiGVM/ai-roasting-algolia.git
 
@@ -137,21 +137,29 @@ searchableAttributes: [
 ]
 ```
 
-**Custom Ranking** (tie-breakers after relevance):
+**Custom Ranking** (tie-breakers after text relevance):
 ```javascript
-// Startups: highest survival score first
+// Startups: Prioritize high-quality, active companies
 customRanking: [
-  'desc(survival_score)',  // Quality signal
-  'desc(is_hiring)',       // Active/growing signal
-  'asc(category)'          // Alphabetical tie-break
+  'desc(survival_score)',  // 🔥 Primary signal: companies with higher survival potential
+  'desc(is_hiring)',       // 📈 Active growth signal: hiring = expanding
+  'desc(batch)',           // 🆕 Recency bias: newer batches first (W26 > W25)
+  'asc(name)'              // 📝 Alphabetical tie-breaker for consistency
 ]
 
-// Graveyard: biggest failures first
+// Graveyard: Most educational failures first
 customRanking: [
-  'desc(raised_amount)',   // More $$ raised = more interesting failure
-  'desc(year_closed)'      // More recent = more relevant
+  'desc(raised_amount)',   // 💰 Raised more $$ = more expensive lesson = higher priority
+  'desc(year_closed)',     // 📅 Recent failures = more relevant to current market
+  'asc(name)'              // 📝 Alphabetical tie-breaker
 ]
 ```
+
+**Why This Ranking Works:**
+- **survival_score first** ensures the best companies surface when browsing
+- **is_hiring as boost** rewards actively growing companies
+- **batch recency** gives newer YC companies visibility (they need it more!)
+- **raised_amount for graveyard** shows the most dramatic failures ($3.5B Faraday Future story > $50K failure)
 
 **Typo Tolerance:** Enabled for 4+ character words, 2 typos for 8+ character words
 
