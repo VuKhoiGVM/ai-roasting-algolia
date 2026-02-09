@@ -163,6 +163,132 @@ searchableAttributes: [
 
 **Typo Tolerance:** Enabled for 4+ character words, 2 typos for 8+ character words
 
+### Frontend Integration
+
+#### Algolia JavaScript SDK v5
+
+Using **Algolia JavaScript SDK v5.35.0** with the new search API:
+
+```typescript
+import { algoliasearch } from 'algoliasearch'
+
+// Initialize client with search-only key (safe for frontend)
+const client = algoliasearch(
+  process.env.NEXT_PUBLIC_ALGOLIA_APP_ID,
+  process.env.NEXT_PUBLIC_ALGOLIA_SEARCH_KEY
+)
+
+// v5 Breaking Changes: initIndex() removed, use search() with requests array
+const { results } = await client.search({
+  requests: [
+    {
+      type: 'default',
+      indexName: 'startups',
+      query: 'AI healthcare',
+      hitsPerPage: 20,
+      filters: 'survival_score >= 40',  // Only good survival rates
+      attributesToHighlight: ['name', 'description', 'category'],
+      highlightPreTag: '<em>',
+      highlightPostTag: '</em>',
+    }
+  ]
+})
+
+const hits = results[0].hits
+```
+
+**Key Search Functions Implemented:**
+```typescript
+// 1. Unified Search - both indices in parallel
+searchAll(query: string) → Promise<(Startup | FailedStartup)[]>
+
+// 2. Single index search with filters
+searchStartups(query, { category, hitsPerPage, filters, facetFilters })
+
+// 3. Top performers
+getTopStartups() → Top 10 by survival_score (filtered >= 40)
+getTopGraveyardEntries() → Top 10 by raised_amount
+
+// 4. Faceting for filters
+getCategories() → Category names with counts
+getBatchFacets() → YC batches with counts (sorted by recency)
+getAllFacets() → All facets in parallel using Promise.all()
+
+// 5. Category filtering
+searchStartupsByCategory(category)
+searchGraveyardByCategory(category)
+```
+
+**Search Response with Highlights:**
+```typescript
+{
+  "objectID": "yc_31306",
+  "name": "Martini",
+  "description": "Collaborative <em>AI</em>-native filmmaking...",
+  "category": "Generative <em>AI</em>",
+  "_highlightResult": {
+    "name": { value: "Martini", matchLevel: "none" },
+    "description": { value: "Collaborative <em>AI</em>-native...", matchLevel: "full" }
+  }
+}
+```
+
+#### Vercel AI SDK + Agent Studio
+
+Using **Vercel AI SDK v6** with direct Agent Studio transport (no backend needed!):
+
+```typescript
+import { useChat, DefaultChatTransport } from "ai"
+
+const transport = new DefaultChatTransport({
+  api: `https://${appId}.algolia.net/agent-studio/1/agents/${agentId}/completions?compatibilityMode=ai-sdk-5`,
+  headers: {
+    "x-algolia-application-id": appId,
+    "x-algolia-api-key": searchKey,  // Search-only key (safe for client)
+  },
+})
+
+const chat = useChat({ transport })
+
+// Send message
+chat.sendMessage({ text: userInput })
+```
+
+**Response Parsing:**
+```typescript
+// Extract metrics from structured AI response using regex
+const survivalMatch = text.match(/\*\*Survival Probability:\*\*\s*(\d+)%?/i)
+const saturationMatch = text.match(/\*\*Market Saturation:\*\*\s*(Low|Medium|High)/i)
+const fundingMatch = text.match(/\*\*Funding Likelihood:\*\*\s*(\d+)%?/i)
+
+// Parse graveyard entries
+const graveyardMatch = text.match(/\*\*💀[^*]*:\*\*([\s\S]*?)(?=\*\*🔄|\*\*The Roast|$)/i)
+
+// Parse pivot suggestions
+const pivotMatch = text.match(/\*\*🔄[^*]*:\*\*([\s\S]*?)(?=\*\*|$)/i)
+```
+
+**Rendering Components:**
+- Survival probability → colored progress bar (green ≥70%, yellow 40-69%, red <40%)
+- Market saturation → visual meter with emoji indicators (🔥 Low, ⚠️ Medium, 🚫 High)
+- Funding likelihood → percentage meter with confidence level
+- Graveyard section → cards showing failed companies with reasons
+- Pivot suggestions → clickable chips that re-analyze the new direction
+
+**Real-time Search UI:**
+```typescript
+// Debounced search as user types
+const [results, setResults] = useState([])
+
+useEffect(() => {
+  const timer = setTimeout(async () => {
+    const hits = await searchAll(query)  // Searches both indices
+    setResults(hits)
+  }, 300)
+  return () => clearTimeout(timer)
+}, [query])
+```
+
 ### Query Rules
 
 I implemented query rules for **both indices** to enhance search experience:
@@ -173,42 +299,39 @@ I implemented query rules for **both indices** to enhance search experience:
 ```javascript
 // Searching "ai", "ml", "llm", "gpt" → Boost AI/ML companies to top
 {
-  objectID: 'ai-boost',
   condition: { pattern: 'ai', anchoring: 'contains' },
   consequence: {
     filterPromotes: true,
     params: {
-      filters: 'category:Artificial Intelligence OR category:Machine Learning OR category:Generative AI'
+      filters: 'category:Artificial Intelligence OR category:Machine Learning OR category:AI'
     }
   }
 }
 ```
 
-**Recent Batch Boost:**
+**Dev Tools Category Boost:**
 ```javascript
-// Searching "recent" or "new" → Show latest YC batches first
+// Searching "dev tools", "developer tools" → Boost Dev Tools companies to top
 {
-  objectID: 'recent-boost',
-  condition: { pattern: 'recent', anchoring: 'contains' },
-  consequence: {
-    filterPromotes: false,
-    params: {
-      filters: 'batch:W26 OR batch:W25 OR batch:W24'
-    }
-  }
-}
-```
-
-**Hiring Companies Boost:**
-```javascript
-// Searching "hiring" or "growing" → Prioritize active companies
-{
-  objectID: 'hiring-boost',
-  condition: { pattern: 'hiring', anchoring: 'contains' },
+  condition: { pattern: 'dev', anchoring: 'contains' },
   consequence: {
     filterPromotes: true,
     params: {
-      filters: 'is_hiring:true'
+      filters: 'category:Developer Tools'
+    }
+  }
+}
+```
+
+**Fintech Category Boost:**
+```javascript
+// Searching "fintech", "financial" → Boost Fintech companies to top
+{
+  condition: { pattern: 'fintech', anchoring: 'contains' },
+  consequence: {
+    filterPromotes: true,
+    params: {
+      filters: 'category:Fintech'
     }
   }
 }
@@ -216,61 +339,20 @@ I implemented query rules for **both indices** to enhance search experience:
 
 #### Graveyard Index Query Rules
 
-**High-Profile Failures:**
 ```javascript
-// Searching "big failure", "billion", "expensive" → Show companies that raised $100M+
-{
-  objectID: 'big-failure-boost',
-  condition: { pattern: 'billion', anchoring: 'contains' },
-  consequence: {
-    filterPromotes: true,
-    params: {
-      numericFilters: 'raised_amount>=100000000'
-    }
-  }
-}
-```
-
-**Recent Failures:**
-```javascript
-// Searching "recent failure", "shutdown 2024" → Show latest closures
-{
-  objectID: 'recent-failure',
-  condition: { pattern: 'recent', anchoring: 'contains' },
-  consequence: {
-    filterPromotes: false,
-    params: {
-      numericFilters: 'year_closed>=2023'
-    }
-  }
-}
-```
-
-**Specific Failure Reasons:**
-```javascript
-// Searching "ran out of cash", "no market", "competition"
-// → Auto-filter by failure reason flags
-{
-  objectID: 'cash-failure',
-  condition: { pattern: 'ran out of cash', anchoring: 'contains' },
-  consequence: {
-    filterPromotes: true,
-    params: {
-      filters: 'ran_out_of_cash:true'
-    }
-  }
-}
-
-{
-  objectID: 'competition-failure',
-  condition: { pattern: 'competition', anchoring: 'contains' },
-  consequence: {
-    filterPromotes: true,
-    params: {
-      filters: 'competition:true OR lost_to_giants:true'
-    }
-  }
-}
+// Only show graveyard companies relevant when search keywords are 'failed', 'bankrupt', 'shutdown'
+  {
+    enabled: true,
+    conditions: [{
+      pattern: 'failed',
+      anchoring: 'contains'
+    }],
+    consequence: {
+      filterPromotes: false,
+      userData: { showGraveyardFirst: true }
+    },
+    description: 'Show graveyard for "failed" queries'
+  },
 ```
 
 ### Agent Configuration
@@ -283,8 +365,8 @@ Both indices enabled for retrieval:
 - **graveyard** index search - For failure pattern analysis
 
 #### LLM Selection
-**Google Gemini 2.0 Flash** - Chosen for:
-- Fast response times (<1 second)
+**Google Gemini 2.5 Flash** - Chosen for:
+- Fast response times (<10 seconds)
 - Strong reasoning capabilities
 - Good with structured output
 
