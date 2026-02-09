@@ -477,7 +477,7 @@ This shows the full power: **instant retrieval → brutal honesty → actionable
 ## Tech Stack
 
 - **Frontend:** Next.js 16.1.6 (App Router + Turbopack), React 19
-- **AI:** Algolia Agent Studio, Vercel AI SDK v6, Google Gemini 2.0 Flash
+- **AI:** Algolia Agent Studio, Vercel AI SDK v6, Google Gemini 2.5 Flash
 - **Search:** Algolia JavaScript SDK v5.35.0
 - **Styling:** Tailwind CSS v4, shadcn/ui
 - **Data:** 2,500 YC startups + 403 failed companies
@@ -498,3 +498,15 @@ Potential improvements I'd love to add:
 **Built with 🔥 for the Algolia Agent Studio Challenge 2026**
 
 *Demo: https://youtu.be/TuSimU_864U | Live: https://ai-roasting-algolia.vercel.app*
+
+---
+
+💬 **Got questions? Drop them in the comments below!**
+
+I'm happy to discuss:
+- Algolia Agent Studio setup and configuration
+- Survival score algorithm tuning
+- Working with Algolia v5 SDK
+- Next.js + Vercel AI SDK integration
+- Startup graveyard data sourcing
+- Or anything else about the project!
