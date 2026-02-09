@@ -20,7 +20,9 @@
 
 ## 🚀 Live Demo
 
-[**View Live Demo**](https://startup-roast.vercel.app) *(coming soon)*
+[**View Live Demo**](https://ai-roasting-algolia.vercel.app)
+
+[![Watch Demo](https://img.shields.io/badge/YouTube-Demo-red?logo=youtube)](https://youtu.be/TuSimU_864U)
 
 ## 📸 Screenshots
 

@@ -35,17 +35,13 @@ Startup Roast combines conversational AI with retrieval from thousands of real c
 
 ## Demo
 
-**Live URL:** https://startup-roast.vercel.app
+**Live URL:** https://ai-roasting-algolia.vercel.app
+
+**Video Demo:** https://youtu.be/TuSimU_864U
+
+[![Watch the 60-second demo](https://img.youtube.com/vi/TuSimU_864U/0.jpg)](https://www.youtube.com/watch?v=TuSimU_864U)
 
 **Repository:** https://github.com/yourusername/startup-roast
-
-### Screenshots
-
-![Homepage](https://i.imgur.com/placeholder.png)
-*The main interface with search, top startups, and notable failures*
-
-![AI Analysis](https://i.imgur.com/placeholder.png)
-*Structured metrics showing survival probability, saturation, and graveyard examples*
 
 ---
 
@@ -75,19 +71,24 @@ In Algolia Agent Studio, I configured:
 **LLM:** Google Gemini 2.0 Flash for fast, intelligent responses
 
 **System Prompt:** Engineered to return structured data with specific formatting for parsing:
+
 ```
+You are Startup Roast - a brutally honest startup advisor. Analyze ideas against real data.
+
+Your response must follow this exact format:
+
 **Survival Probability:** X%
 **Market Saturation:** [Low/Medium/High]
 **Funding Likelihood:** X%
 
 **💀 The Graveyard (similar failures):**
-- [Company]: [Reason]
+- [Company Name]: [brief failure reason]
 
 **🔄 Pivot Suggestions:**
-- [Pivot idea]
+- [Specific pivot idea with reasoning]
 
 **The Roast:**
-[Analysis text]
+[Brutally honest analysis with specific references to similar companies. Be direct but constructive.]
 ```
 
 This structured output allows the frontend to parse and display visual metrics cards separately from the conversational roast text.
@@ -97,6 +98,8 @@ This structured output allows the frontend to parse and display visual metrics c
 Using Vercel AI SDK v6 with direct Agent Studio transport:
 
 ```typescript
+import { DefaultChatTransport } from "ai"
+
 const transport = new DefaultChatTransport({
   api: `https://${appId}.algolia.net/agent-studio/1/agents/${agentId}/completions?compatibilityMode=ai-sdk-5`,
   headers: {
@@ -153,7 +156,8 @@ Without Algolia's millisecond-level retrieval:
 When a user asks about "AI for legal contracts":
 
 **Slow retrieval:** Finds 5-10 companies, misses key competitors, gives generic advice
-**Algolia:** Retrieves 30+ relevant companies instantly, identifies Redfin, LegalZoom, Ironclad, provides specific competitive analysis
+
+**Algolia:** Retrieves 30+ relevant companies instantly, identifies proper competitors, provides specific competitive analysis with real company names and their outcomes
 
 This speed allows users to iterate quickly - try an idea, get feedback, pivot, try again. In one session, a user might explore 5-6 variations of their concept. Each exploration compounds their understanding of the market.
 
@@ -182,4 +186,4 @@ Potential improvements I'd love to add:
 
 **Built with 🔥 for the Algolia Agent Studio Challenge 2026**
 
-*Cover image: [screenshot of your choice]*
+*Demo: https://youtu.be/TuSimU_864U | Live: https://ai-roasting-algolia.vercel.app*
