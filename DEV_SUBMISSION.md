@@ -439,22 +439,38 @@ Without Algolia's millisecond-level retrieval:
 
 ### Real Example
 
-When a user types "AI-powered dog walking app":
+When a user types "dating app with AI matching for people over 30":
 
-**Slow retrieval:** Finds 5-10 pet tech companies, misses key competitors, gives generic advice like "the pet market is growing"
+**Algolia retrieves instantly:**
+- 500+ dating/tech companies across both indices
+- Failed companies like Woo ($1.5M raised, lost to Tinder)
+- Market saturation: High (dominated by Match Group, Bumble)
+- Survival Probability: 20%
 
-**Algolia:** Retrieves 30+ relevant pet tech companies instantly, identifies:
-- **200+ existing competitors** in the space ( Rover, Wag, Fetch, etc.)
-- **Failed companies** like "DogVacay" (raised $14M, shut down due to saturation)
-- **Market saturation: High** with graveyard examples
-- **Survival Probability: 15%** with specific pivot suggestions
+**Structured Metrics Displayed:**
+```
+Survival Probability: 20% (Danger zone 💀)
+Funding Likelihood: 15% (Better bring cash 💸)
+Market Saturation: High (Crowded market 👥)
+```
 
-**The AI response includes real company names:**
-> "You're entering a market with Rover ($300M raised), Wag ($300M acquired by Nest), and 200+ other pet tech startups. DogVacay raised $14M and shut down because they couldn't differentiate. Consider pivoting to B2B pet insurance (one startup in this space raised $50M)."
+**Graveyard Section:**
+> 💀 Woo ($1.5M) - Dating app for professionals, lost to Tinder. The dating app market is dominated by giants.
 
-This specific, data-backed feedback helps users understand their actual competitive landscape - not generic platitudes, but hard numbers from real companies.
+**The Roast (with real data):**
+> "The dating app market is a brutal graveyard for new entrants. You're entering a 'High' saturation market dominated by Match Group (Tinder, Hinge, OKCupid) and Bumble, who have massive user bases and deep pockets for marketing. Your differentiation, 'AI suggestions for matching,' is a feature, not a unique product. Woo raised $1.5M and couldn't compete with Tinder."
 
-This speed allows users to iterate quickly - try an idea, get roasted, pivot, try again. In one session, a user might explore 5-6 variations of their concept. Each exploration compounds their understanding of the market.
+**Pivot Suggestions:**
+- "Divorced Parents Dating App" → 40% survival score
+- "Travel Enthusiasts Over 30" → Medium saturation
+
+**After clicking a pivot:**
+The user clicks "Divorced Parents Dating App" and the AI instantly re-analyzes:
+- Survival Probability improves to 40%
+- Market Saturation drops to Medium
+- New pivot suggestions appear
+
+This shows the full power: **instant retrieval → brutal honesty → actionable pivots**. Users can iterate 5-6 times in one session, each time getting specific feedback grounded in real company data.
 
 ---
 
